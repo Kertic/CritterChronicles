@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a78ace26f6d45ed4b88d8211083afa6d, type: 3}
-  m_Name: Knight
+  m_Name: Rabbit
   m_EditorClassIdentifier: 
-  UnitId: knight
-  DisplayName: Knight
-  MaxHP: 30
-  Armor: 2
-  AttackDamage: 6
+  UnitId: rabbit
+  DisplayName: Rabbit
+  MaxHP: 24
+  Armor: 1
+  AttackDamage: 4
