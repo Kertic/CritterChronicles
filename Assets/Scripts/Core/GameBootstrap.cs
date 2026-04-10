@@ -12,7 +12,7 @@ namespace AutobattlerSample.Core
     public class GameBootstrap : MonoBehaviour
     {
         [Header("Map Settings")]
-        public int Floors = 45;
+        public int Floors = 135;
         public int Width = 5;
         public int Seed = 0;
 
@@ -171,7 +171,7 @@ namespace AutobattlerSample.Core
         private void OnBattleEnd(BattleResult result)
         {
             _lastBattleResult = result;
-            _battleScreen.ShowResult(result.PlayerWon);
+            _battleScreen.ShowResult(result.PlayerWon, result.TimedOut);
         }
 
         private void OnBattleContinue(bool playerWon)

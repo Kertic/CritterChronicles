@@ -148,7 +148,9 @@ namespace AutobattlerSample.Battle
             foreach (var enemy in _enemies)
                 enemy.WriteBackHP();
 
-            result.PlayerWon = _allies.Any(u => u.IsAlive);
+            bool timedOut = round >= maxRounds && _allies.Any(u => u.IsAlive) && _enemies.Any(u => u.IsAlive);
+            result.TimedOut = timedOut;
+            result.PlayerWon = !timedOut && _allies.Any(u => u.IsAlive);
 
             if (!result.PlayerWon)
             {
@@ -218,7 +220,7 @@ namespace AutobattlerSample.Battle
                 UsedActionType = ActionType.Attack,
                 ActionName = readyAction.DisplayName,
                 RawDamage = rawDamage,
-                DamageDealt = rawDamage,
+                DamageDealt = rawDamage - shieldAbsorbed,
                 ShieldAbsorbed = shieldAbsorbed,
                 TargetHPBefore = hpBefore,
                 TargetHPAfter = target.CurrentHP,
@@ -370,6 +372,7 @@ namespace AutobattlerSample.Battle
             bool hasteTriggered = false;
             string hasteUnitName = null, hasteActionName = null;
             int hasteCdBefore = 0, hasteCdAfter = 0;
+            var allHasteTriggers = new List<(string unitName, string actionName, int cdBefore, int cdAfter)>();
 
             foreach (var ally in allies)
             {
@@ -380,13 +383,17 @@ namespace AutobattlerSample.Battle
                 if (healed > 0)
                 {
                     var haste = ally.TriggerHasteOnHeal(1);
-                    if (haste.triggered && !hasteTriggered)
+                    if (haste.triggered)
                     {
-                        hasteTriggered = true;
-                        hasteUnitName = ally.DisplayName;
-                        hasteActionName = haste.actionName;
-                        hasteCdBefore = haste.cdBefore;
-                        hasteCdAfter = haste.cdAfter;
+                        allHasteTriggers.Add((ally.DisplayName, haste.actionName, haste.cdBefore, haste.cdAfter));
+                        if (!hasteTriggered)
+                        {
+                            hasteTriggered = true;
+                            hasteUnitName = ally.DisplayName;
+                            hasteActionName = haste.actionName;
+                            hasteCdBefore = haste.cdBefore;
+                            hasteCdAfter = haste.cdAfter;
+                        }
                     }
                 }
             }
@@ -412,6 +419,7 @@ namespace AutobattlerSample.Battle
                 HasteActionName = hasteActionName,
                 HasteCooldownBefore = hasteCdBefore,
                 HasteCooldownAfter = hasteCdAfter,
+                HasteAllTriggers = allHasteTriggers.Count > 0 ? allHasteTriggers : null,
                 TurnNumber = round
             };
         }

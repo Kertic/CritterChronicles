@@ -324,16 +324,28 @@ namespace AutobattlerSample.UI
             _combatLog?.AddEntry(action);
         }
 
-        public void ShowResult(bool playerWon)
+        public void ShowResult(bool playerWon, bool timedOut = false)
         {
             _lastBattleWon = playerWon;
 
-            if (_turnText != null)
-                _turnText.text = playerWon ? "All enemies defeated!" : "Your team has fallen...";
+            if (timedOut)
+            {
+                if (_turnText != null)
+                    _turnText.text = "The battle dragged on too long — both sides withdrew!";
 
-            _footer = UIFactory.CreateText("Footer", _content, playerWon ? "VICTORY!" : "DEFEAT...", 40);
-            _footer.fontStyle = FontStyle.Bold;
-            _footer.color = playerWon ? new Color(0.3f, 1f, 0.3f) : new Color(1f, 0.3f, 0.3f);
+                _footer = UIFactory.CreateText("Footer", _content, "DRAW — TIMED OUT", 40);
+                _footer.fontStyle = FontStyle.Bold;
+                _footer.color = new Color(1f, 0.8f, 0.3f);
+            }
+            else
+            {
+                if (_turnText != null)
+                    _turnText.text = playerWon ? "All enemies defeated!" : "Your team has fallen...";
+
+                _footer = UIFactory.CreateText("Footer", _content, playerWon ? "VICTORY!" : "DEFEAT...", 40);
+                _footer.fontStyle = FontStyle.Bold;
+                _footer.color = playerWon ? new Color(0.3f, 1f, 0.3f) : new Color(1f, 0.3f, 0.3f);
+            }
             SetAnchoredRect(_footer.rectTransform, new Vector2(0.3f, 0.08f), new Vector2(0.7f, 0.18f));
 
             var button = UIFactory.CreateButton("Continue", _content, "Continue");

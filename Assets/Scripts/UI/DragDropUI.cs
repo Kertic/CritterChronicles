@@ -9,7 +9,8 @@ namespace AutobattlerSample.UI
     {
         TeamUnit,
         CampUnit,
-        CampItem
+        CampItem,
+        EquippedItem
     }
 
     public sealed class UIDragPayload
@@ -51,10 +52,21 @@ namespace AutobattlerSample.UI
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 0.35f;
 
+            // Capture the actual rendered size before cloning so the ghost is sized correctly
+            Vector2 sourceSize = _rectTransform.rect.size;
+
             var ghost = Instantiate(gameObject, _dragRoot);
             ghost.name = gameObject.name + "_DragGhost";
             _ghostRect = ghost.GetComponent<RectTransform>();
             _ghostRect.SetAsLastSibling();
+
+            // Switch to centered anchors and apply the captured size so the ghost
+            // doesn't collapse to zero when re-parented under a different layout root.
+            _ghostRect.anchorMin = new Vector2(0.5f, 0.5f);
+            _ghostRect.anchorMax = new Vector2(0.5f, 0.5f);
+            _ghostRect.pivot = new Vector2(0.5f, 0.5f);
+            _ghostRect.sizeDelta = sourceSize;
+
             _ghostCanvasGroup = ghost.GetComponent<CanvasGroup>();
             if (_ghostCanvasGroup == null)
                 _ghostCanvasGroup = ghost.AddComponent<CanvasGroup>();
@@ -94,16 +106,11 @@ namespace AutobattlerSample.UI
 
         private void MoveToPointer(PointerEventData eventData)
         {
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            if (_ghostRect != null &&
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     _dragRoot, eventData.position, eventData.pressEventCamera, out var localPoint))
             {
-                if (_ghostRect != null)
-                {
-                    _ghostRect.anchorMin = new Vector2(0.5f, 0.5f);
-                    _ghostRect.anchorMax = new Vector2(0.5f, 0.5f);
-                    _ghostRect.pivot = new Vector2(0.5f, 0.5f);
-                    _ghostRect.anchoredPosition = localPoint;
-                }
+                _ghostRect.anchoredPosition = localPoint;
             }
         }
     }

@@ -89,7 +89,7 @@ namespace AutobattlerSample.Data
                     if (scale <= 0f) scale = 1f;
                     cloned.Amount = (int)(cloned.Amount * Math.Pow(scale, Rank - 1));
                 }
-                if (cloned.Type == ActionType.Attack && BonusCooldownReduction > 0)
+                if (BonusCooldownReduction > 0)
                 {
                     cloned.Cooldown = Math.Max(1, cloned.Cooldown - BonusCooldownReduction);
                 }

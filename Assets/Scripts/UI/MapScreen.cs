@@ -5,10 +5,87 @@ using AutobattlerSample.Core;
 using AutobattlerSample.Data;
 using AutobattlerSample.Map;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace AutobattlerSample.UI
 {
+    public class MapViewportController : MonoBehaviour, IScrollHandler
+    {
+        private ScrollRect _scrollRect;
+        private RectTransform _viewport;
+        private RectTransform _content;
+        private float _zoomStep = 0.1f;
+        private float _minZoom = 0.5f;
+        private float _maxZoom = 2f;
+
+        public void Initialize(ScrollRect targetScrollRect, RectTransform targetViewport, RectTransform targetContent)
+        {
+            _scrollRect = targetScrollRect;
+            _viewport = targetViewport;
+            _content = targetContent;
+        }
+
+        public void OnScroll(PointerEventData eventData)
+        {
+            if (_scrollRect == null || _viewport == null || _content == null)
+                return;
+
+            float delta = eventData.scrollDelta.y;
+            if (Mathf.Approximately(delta, 0f))
+                return;
+
+            float currentZoom = _content.localScale.x;
+            float nextZoom = Mathf.Clamp(currentZoom + Mathf.Sign(delta) * _zoomStep, _minZoom, _maxZoom);
+            if (Mathf.Approximately(currentZoom, nextZoom))
+                return;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _viewport, eventData.position, eventData.pressEventCamera, out var viewportLocalPoint))
+            {
+                return;
+            }
+
+            Vector2 normalizedPivot = new Vector2(
+                Mathf.InverseLerp(_viewport.rect.xMin, _viewport.rect.xMax, viewportLocalPoint.x),
+                Mathf.InverseLerp(_viewport.rect.yMin, _viewport.rect.yMax, viewportLocalPoint.y));
+
+            Vector2 beforeZoomPoint = GetContentPointAtNormalizedViewportPosition(normalizedPivot);
+
+            _content.localScale = new Vector3(nextZoom, nextZoom, 1f);
+            Canvas.ForceUpdateCanvases();
+
+            Vector2 afterZoomPoint = GetContentPointAtNormalizedViewportPosition(normalizedPivot);
+            _content.anchoredPosition += afterZoomPoint - beforeZoomPoint;
+
+            ClampContentToViewport();
+            _scrollRect.StopMovement();
+        }
+
+        private Vector2 GetContentPointAtNormalizedViewportPosition(Vector2 normalizedViewportPoint)
+        {
+            Vector2 viewportPoint = new Vector2(
+                Mathf.Lerp(_viewport.rect.xMin, _viewport.rect.xMax, normalizedViewportPoint.x),
+                Mathf.Lerp(_viewport.rect.yMin, _viewport.rect.yMax, normalizedViewportPoint.y));
+
+            return viewportPoint - _content.anchoredPosition;
+        }
+
+        private void ClampContentToViewport()
+        {
+            Vector2 scaledSize = Vector2.Scale(_content.rect.size, _content.localScale);
+            Vector2 viewportSize = _viewport.rect.size;
+            Vector2 anchored = _content.anchoredPosition;
+
+            float maxX = Mathf.Max(0f, (scaledSize.x - viewportSize.x) * 0.5f);
+            float minY = Mathf.Min(0f, viewportSize.y - scaledSize.y);
+
+            anchored.x = Mathf.Clamp(anchored.x, -maxX, maxX);
+            anchored.y = Mathf.Clamp(anchored.y, minY, 0f);
+            _content.anchoredPosition = anchored;
+        }
+    }
+
     public class MapScreen
     {
         private GameObject _root;
@@ -72,10 +149,14 @@ namespace AutobattlerSample.UI
             var scroll = scrollGo.GetComponent<ScrollRect>();
             scroll.viewport = maskRt;
             scroll.content = mapContentRt;
-            scroll.horizontal = false;
+            scroll.horizontal = true;
             scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.scrollSensitivity = 120f;
+            scroll.inertia = false;
+
+            var viewportController = scrollGo.AddComponent<MapViewportController>();
+            viewportController.Initialize(scroll, maskRt, mapContentRt);
 
             var nodePositions = new Dictionary<MapNode, Vector2>();
             float xSpacing = 600f;

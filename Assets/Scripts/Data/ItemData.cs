@@ -16,6 +16,7 @@ namespace AutobattlerSample.Data
 
         public void ApplyTo(UnitInstance unit)
         {
+            string tag = GetInstanceID().ToString();
             switch (Type)
             {
                 case ItemType.MaxHP:
@@ -28,10 +29,10 @@ namespace AutobattlerSample.Data
                     break;
                 case ItemType.Shield:
                     // Shield items now grant a ShieldSelf action instead of flat shield
-                    unit.AddAction(new ActionData(Name, ActionType.ShieldSelf, Amount, 4));
+                    unit.AddAction(new ActionData(Name, ActionType.ShieldSelf, Amount, 4) { SourceTag = tag });
                     break;
                 case ItemType.ActionGrant:
-                    unit.AddAction(new ActionData(Name, GrantedActionType, GrantedActionAmount, GrantedActionCooldown));
+                    unit.AddAction(new ActionData(Name, GrantedActionType, GrantedActionAmount, GrantedActionCooldown) { SourceTag = tag });
                     break;
             }
             if (!unit.EquippedItems.Contains(this))
@@ -54,10 +55,11 @@ namespace AutobattlerSample.Data
                     break;
                 case ItemType.Shield:
                 case ItemType.ActionGrant:
-                    // Remove the action granted by this item (matched by name)
+                    // Remove the action granted by this item (matched by SourceTag for uniqueness)
+                    string tag = GetInstanceID().ToString();
                     for (int i = unit.Actions.Count - 1; i >= 0; i--)
                     {
-                        if (unit.Actions[i].Data != null && unit.Actions[i].Data.DisplayName == Name)
+                        if (unit.Actions[i].Data != null && unit.Actions[i].Data.SourceTag == tag)
                         {
                             unit.Actions.RemoveAt(i);
                             break;

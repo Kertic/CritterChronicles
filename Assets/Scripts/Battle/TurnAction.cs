@@ -36,5 +36,8 @@ namespace AutobattlerSample.Battle
         public string HasteActionName;
         public int HasteCooldownBefore;
         public int HasteCooldownAfter;
+
+        /// <summary>All haste triggers for HealAll (when multiple allies have HasteOnHeal).</summary>
+        public List<(string unitName, string actionName, int cdBefore, int cdAfter)> HasteAllTriggers;
     }
 }

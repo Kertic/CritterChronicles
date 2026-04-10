@@ -284,7 +284,17 @@ namespace AutobattlerSample.UI
                 _richSb.AppendLine($"    <color=#DD88FF>\u2665 Passive: Lifesteal healed +{action.LifestealHealed} HP</color>");
                 _plainSb.AppendLine($"    Passive: Lifesteal healed +{action.LifestealHealed} HP");
             }
-            if (action.HasteTriggered)
+            if (action.HasteAllTriggers != null && action.HasteAllTriggers.Count > 0)
+            {
+                foreach (var (unitName, actionName, cdBefore, cdAfter) in action.HasteAllTriggers)
+                {
+                    _richSb.AppendLine($"    <color=#FFBB44>\u26A1 Passive: HasteOnHeal on {unitName} — " +
+                                       $"{actionName} CD {cdBefore} \u2192 {cdAfter}</color>");
+                    _plainSb.AppendLine($"    Passive: HasteOnHeal on {unitName} — " +
+                                        $"{actionName} CD {cdBefore} -> {cdAfter}");
+                }
+            }
+            else if (action.HasteTriggered)
             {
                 _richSb.AppendLine($"    <color=#FFBB44>\u26A1 Passive: HasteOnHeal on {action.HasteUnitName} — " +
                                    $"{action.HasteActionName} CD {action.HasteCooldownBefore} \u2192 {action.HasteCooldownAfter}</color>");

@@ -26,10 +26,12 @@ MonoBehaviour:
     Type: 0
     Amount: 1
     Cooldown: 5
+    SourceTag: 
   - DisplayName: Soothing Coo
     Type: 4
     Amount: 5
     Cooldown: 3
+    SourceTag: 
   Passive: 0
   RankUpBonusHP: 8
   DamageScalePerRank: 1

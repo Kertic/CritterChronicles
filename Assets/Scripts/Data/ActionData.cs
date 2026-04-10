@@ -9,6 +9,9 @@ namespace AutobattlerSample.Data
         public ActionType Type;
         public int Amount;   // damage, heal, or shield value
         public int Cooldown;
+        /// <summary>Unique tag identifying the source that created this action (e.g. item instance ID).
+        /// Used for reliable removal instead of matching by display name.</summary>
+        public string SourceTag;
 
         public ActionData() { }
 
@@ -38,7 +41,7 @@ namespace AutobattlerSample.Data
 
         public ActionData Clone()
         {
-            return new ActionData(DisplayName, Type, Amount, Cooldown);
+            return new ActionData(DisplayName, Type, Amount, Cooldown) { SourceTag = SourceTag };
         }
     }
 }

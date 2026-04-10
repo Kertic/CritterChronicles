@@ -101,8 +101,11 @@ namespace AutobattlerSample.UI
                 string actionsStr = string.Join(", ", unit.Actions
                     .OrderBy(a => a.Priority)
                     .Select(a => $"{GetActionOrderLabel(a.Priority)}: {a.Data.ShortLabel}"));
+                string itemsStr = unit.EquippedItems.Count > 0
+                    ? "  Items: " + string.Join(", ", unit.EquippedItems.Select(it => it.Name))
+                    : "";
 
-                string info = $"{unit.DisplayName} R{unit.Rank}{sizeStr} - HP:{unit.CurrentHP}/{unit.EffectiveMaxHP}{passiveStr}\n{actionsStr}";
+                string info = $"{unit.DisplayName} R{unit.Rank}{sizeStr} - HP:{unit.CurrentHP}/{unit.EffectiveMaxHP}{passiveStr}{itemsStr}\n{actionsStr}";
 
                 bool isSelected = _selectedUnit == unit;
                 var infoPanel = UIFactory.CreatePanel($"Info_{i}", teamArea.transform, new Vector2(0.13f, yMin), new Vector2(0.84f, yMax));
@@ -151,6 +154,12 @@ namespace AutobattlerSample.UI
                             item.ApplyTo(unit);
                             _runState.CampItems.Remove(item);
                         }
+                        else if (payload.Type == DragPayloadType.EquippedItem)
+                        {
+                            var (eqItem, owner) = ((ItemData, UnitInstance))payload.Value;
+                            eqItem.UnapplyFrom(owner);
+                            eqItem.ApplyTo(unit);
+                        }
                         Rebuild();
                     });
 
@@ -169,53 +178,176 @@ namespace AutobattlerSample.UI
 
         private void BuildSelectedUnitSection()
         {
-            if (_selectedUnit == null || _selectedUnit.Actions.Count <= 0)
+            if (_selectedUnit == null)
+                return;
+
+            bool hasActions = _selectedUnit.Actions.Count > 0;
+            bool hasItems = _selectedUnit.EquippedItems.Count > 0;
+
+            if (!hasActions && !hasItems)
                 return;
 
             var section = UIFactory.CreatePanel("SelectedUnitSection", _content, new Vector2(0.02f, 0.16f), new Vector2(0.98f, 0.34f));
             section.GetComponent<Image>().color = new Color(0.14f, 0.14f, 0.18f, 0.9f);
 
-            var actionTitle = UIFactory.CreateText("ActionTitle", section.transform,
-                $"Action Priority For {_selectedUnit.DisplayName}", 16);
-            actionTitle.color = new Color(0.9f, 0.8f, 0.4f);
-            SetRect(actionTitle.rectTransform, new Vector2(0.02f, 0.78f), new Vector2(0.98f, 0.98f));
+            // Drop zone: accept camp items directly onto this section to equip
+            var sectionDrop = section.AddComponent<UIDropZone>();
+            sectionDrop.Init(
+                payload => payload.Type == DragPayloadType.CampItem && payload.Value is ItemData,
+                payload =>
+                {
+                    var item = (ItemData)payload.Value;
+                    item.ApplyTo(_selectedUnit);
+                    _runState.CampItems.Remove(item);
+                    Rebuild();
+                });
 
-            var sortedActions = _selectedUnit.Actions.OrderBy(a => a.Priority).ToList();
-            for (int j = 0; j < sortedActions.Count; j++)
+            var sectionTitle = UIFactory.CreateText("SectionTitle", section.transform,
+                $"Details for {_selectedUnit.DisplayName}", 16);
+            sectionTitle.color = new Color(0.9f, 0.8f, 0.4f);
+            sectionTitle.fontStyle = FontStyle.Bold;
+            SetRect(sectionTitle.rectTransform, new Vector2(0.02f, 0.88f), new Vector2(0.98f, 0.98f));
+
+            // Layout: actions in upper portion, equipped items in lower portion
+            float actionsTop, actionsBottom;
+            float itemsLabelY, itemsCardTop, itemsCardBottom;
+
+            if (hasActions && hasItems)
             {
-                var action = sortedActions[j];
-                float yMax = 0.72f - j * 0.18f;
-                float yMin = yMax - 0.14f;
+                actionsTop = 0.86f;
+                actionsBottom = 0.36f;
+                itemsLabelY = 0.30f;
+                itemsCardTop = 0.28f;
+                itemsCardBottom = 0.02f;
+            }
+            else if (hasActions)
+            {
+                actionsTop = 0.86f;
+                actionsBottom = 0.02f;
+                itemsLabelY = 0f;
+                itemsCardTop = 0f;
+                itemsCardBottom = 0f;
+            }
+            else
+            {
+                actionsTop = 0f;
+                actionsBottom = 0f;
+                itemsLabelY = 0.82f;
+                itemsCardTop = 0.78f;
+                itemsCardBottom = 0.02f;
+            }
 
-                string aLabel = $"{GetActionOrderLabel(j)} choice: {action.DisplayName} ({action.Type}, {action.Amount}, CD:{action.MaxCooldown})";
-                var aText = UIFactory.CreateText($"A_{j}", section.transform, aLabel, 14, TextAnchor.MiddleLeft);
-                aText.color = Color.white;
-                SetRect(aText.rectTransform, new Vector2(0.03f, yMin), new Vector2(0.68f, yMax));
+            // --- Action Priority ---
+            if (hasActions)
+            {
+                var actLabel = UIFactory.CreateText("ActLabel", section.transform, "ACTION PRIORITY", 13);
+                actLabel.color = new Color(0.7f, 0.8f, 0.9f);
+                actLabel.fontStyle = FontStyle.Bold;
+                SetRect(actLabel.rectTransform, new Vector2(0.02f, actionsTop), new Vector2(0.5f, actionsTop + 0.10f));
 
-                if (j > 0)
+                var sortedActions = _selectedUnit.Actions.OrderBy(a => a.Priority).ToList();
+                float areaHeight = actionsTop - actionsBottom;
+                float rowHeight = Mathf.Min(0.16f, areaHeight / Mathf.Max(sortedActions.Count, 1));
+
+                for (int j = 0; j < sortedActions.Count; j++)
                 {
-                    var aUpBtn = UIFactory.CreateButton($"AUp_{j}", section.transform, "Earlier");
-                    SetRect(aUpBtn.GetComponent<RectTransform>(), new Vector2(0.72f, yMin), new Vector2(0.84f, yMax));
-                    aUpBtn.GetComponentInChildren<Text>().fontSize = 13;
-                    var prev = sortedActions[j - 1];
-                    aUpBtn.onClick.AddListener(() =>
+                    var action = sortedActions[j];
+                    float yMax = actionsTop - j * rowHeight;
+                    float yMin = yMax - rowHeight + 0.01f;
+
+                    string aLabel = $"{GetActionOrderLabel(j)} choice: {action.DisplayName} ({action.Type}, {action.Amount}, CD:{action.MaxCooldown})";
+                    var aText = UIFactory.CreateText($"A_{j}", section.transform, aLabel, 13, TextAnchor.MiddleLeft);
+                    aText.color = Color.white;
+                    SetRect(aText.rectTransform, new Vector2(0.03f, yMin), new Vector2(0.68f, yMax));
+
+                    if (j > 0)
                     {
-                        (action.Priority, prev.Priority) = (prev.Priority, action.Priority);
-                        Rebuild();
-                    });
+                        var aUpBtn = UIFactory.CreateButton($"AUp_{j}", section.transform, "Earlier");
+                        SetRect(aUpBtn.GetComponent<RectTransform>(), new Vector2(0.72f, yMin), new Vector2(0.84f, yMax));
+                        aUpBtn.GetComponentInChildren<Text>().fontSize = 12;
+                        var prev = sortedActions[j - 1];
+                        aUpBtn.onClick.AddListener(() =>
+                        {
+                            (action.Priority, prev.Priority) = (prev.Priority, action.Priority);
+                            Rebuild();
+                        });
+                    }
+
+                    if (j < sortedActions.Count - 1)
+                    {
+                        var nextAction = sortedActions[j + 1];
+                        var aDownBtn = UIFactory.CreateButton($"ADown_{j}", section.transform, "Later");
+                        SetRect(aDownBtn.GetComponent<RectTransform>(), new Vector2(0.85f, yMin), new Vector2(0.97f, yMax));
+                        aDownBtn.GetComponentInChildren<Text>().fontSize = 12;
+                        aDownBtn.onClick.AddListener(() =>
+                        {
+                            (action.Priority, nextAction.Priority) = (nextAction.Priority, action.Priority);
+                            Rebuild();
+                        });
+                    }
                 }
+            }
 
-                if (j < sortedActions.Count - 1)
+            // --- Equipped Items ---
+            if (hasItems)
+            {
+                var itemLabel = UIFactory.CreateText("EqItemLabel", section.transform,
+                    "EQUIPPED ITEMS  (drag to Camp Items to unequip)", 12);
+                itemLabel.color = new Color(0.6f, 0.85f, 0.6f);
+                itemLabel.fontStyle = FontStyle.Bold;
+                SetRect(itemLabel.rectTransform, new Vector2(0.02f, itemsLabelY), new Vector2(0.98f, itemsLabelY + 0.08f));
+
+                float itemW = 0.92f / Mathf.Max(_selectedUnit.EquippedItems.Count, 1);
+                for (int i = 0; i < _selectedUnit.EquippedItems.Count; i++)
                 {
-                    var nextAction = sortedActions[j + 1];
-                    var aDownBtn = UIFactory.CreateButton($"ADown_{j}", section.transform, "Later");
-                    SetRect(aDownBtn.GetComponent<RectTransform>(), new Vector2(0.85f, yMin), new Vector2(0.97f, yMax));
-                    aDownBtn.GetComponentInChildren<Text>().fontSize = 13;
-                    aDownBtn.onClick.AddListener(() =>
+                    var item = _selectedUnit.EquippedItems[i];
+                    float xMin = 0.03f + i * itemW;
+                    float xMax = Mathf.Min(0.97f, xMin + itemW - 0.01f);
+
+                    var itemPanel = UIFactory.CreatePanel($"EqItem_{i}", section.transform,
+                        new Vector2(xMin, itemsCardBottom), new Vector2(xMax, itemsCardTop));
+                    itemPanel.GetComponent<Image>().color = new Color(0.2f, 0.28f, 0.2f, 0.95f);
+
+                    string itemDesc;
+                    if (item.Type == ItemType.ActionGrant)
+                        itemDesc = $"{item.Name}\n{item.GrantedActionType}:{item.GrantedActionAmount}";
+                    else
+                        itemDesc = $"{item.Name}\n{item.TypeName}";
+
+                    var itemText = UIFactory.CreateText($"EqItemText_{i}", itemPanel.transform, itemDesc, 11, TextAnchor.MiddleCenter);
+                    itemText.color = new Color(0.85f, 0.95f, 0.85f);
+                    var tRt = itemText.rectTransform;
+                    tRt.anchorMin = new Vector2(0f, 0.28f);
+                    tRt.anchorMax = Vector2.one;
+                    tRt.offsetMin = new Vector2(2f, 0f);
+                    tRt.offsetMax = new Vector2(-2f, 0f);
+
+                    var capturedItem = item;
+                    var capturedUnit = _selectedUnit;
+
+                    // Unequip button at bottom of card
+                    var unequipBtn = UIFactory.CreateButton($"Unequip_{i}", itemPanel.transform, "Unequip");
+                    var ubRt = unequipBtn.GetComponent<RectTransform>();
+                    ubRt.anchorMin = new Vector2(0.05f, 0.02f);
+                    ubRt.anchorMax = new Vector2(0.95f, 0.26f);
+                    ubRt.offsetMin = Vector2.zero;
+                    ubRt.offsetMax = Vector2.zero;
+                    unequipBtn.GetComponentInChildren<Text>().fontSize = 10;
+                    unequipBtn.GetComponent<Image>().color = new Color(0.4f, 0.2f, 0.15f);
+                    unequipBtn.onClick.AddListener(() =>
                     {
-                        (action.Priority, nextAction.Priority) = (nextAction.Priority, action.Priority);
+                        capturedItem.UnapplyFrom(capturedUnit);
+                        _runState.CampItems.Add(capturedItem);
                         Rebuild();
                     });
+
+                    // Draggable for unequipping via drag to camp items area
+                    var draggable = itemPanel.AddComponent<UIDraggable>();
+                    draggable.Init(new UIDragPayload
+                    {
+                        Type = DragPayloadType.EquippedItem,
+                        Value = (capturedItem, capturedUnit)
+                    }, _content);
                 }
             }
         }
@@ -285,9 +417,22 @@ namespace AutobattlerSample.UI
             var itemArea = UIFactory.CreatePanel("CampItemArea", _content, new Vector2(0.52f, 0.02f), new Vector2(0.98f, 0.10f));
             itemArea.GetComponent<Image>().color = new Color(0.15f, 0.18f, 0.12f, 0.9f);
 
+            // Drop zone: accept equipped items dragged here to unequip them back to camp
+            var itemAreaDrop = itemArea.AddComponent<UIDropZone>();
+            itemAreaDrop.Init(
+                payload => payload.Type == DragPayloadType.EquippedItem,
+                payload =>
+                {
+                    var (item, owner) = ((ItemData, UnitInstance))payload.Value;
+                    item.UnapplyFrom(owner);
+                    _runState.CampItems.Add(item);
+                    Rebuild();
+                });
+
             if (_runState.CampItems.Count == 0)
             {
-                var emptyText = UIFactory.CreateText("ItemEmpty", itemArea.transform, "Drag these onto a critter to equip them.", 13);
+                var emptyText = UIFactory.CreateText("ItemEmpty", itemArea.transform,
+                    "Drag items onto a critter to equip, or drag equipped items here to unequip.", 12);
                 emptyText.color = new Color(0.75f, 0.85f, 0.75f);
                 SetRect(emptyText.rectTransform, new Vector2(0.02f, 0.1f), new Vector2(0.98f, 0.9f));
                 return;
@@ -300,7 +445,16 @@ namespace AutobattlerSample.UI
                 float xMin = 0.02f + i * width;
                 float xMax = Mathf.Min(0.98f, xMin + width - 0.01f);
 
-                var itemBtn = UIFactory.CreateButton($"CampItem_{i}", itemArea.transform, campItem.Name);
+                string itemLabel;
+                if (campItem.Type == ItemType.ActionGrant)
+                    itemLabel = $"{campItem.Name}\n{campItem.GrantedActionType}:{campItem.GrantedActionAmount}";
+                else
+                {
+                    string sign = campItem.Type == ItemType.CooldownReduction ? "-" : "+";
+                    itemLabel = $"{campItem.Name}\n{sign}{campItem.Amount} {campItem.TypeName}";
+                }
+
+                var itemBtn = UIFactory.CreateButton($"CampItem_{i}", itemArea.transform, itemLabel);
                 SetRect(itemBtn.GetComponent<RectTransform>(), new Vector2(xMin, 0.08f), new Vector2(xMax, 0.92f));
                 itemBtn.GetComponentInChildren<Text>().fontSize = 11;
                 itemBtn.GetComponent<Image>().color = new Color(0.25f, 0.3f, 0.2f);
@@ -326,6 +480,11 @@ namespace AutobattlerSample.UI
                            _runState.UsedSlots + campUnit.SlotCost <= RunState.MaxSlots;
                 case DragPayloadType.CampItem:
                     return payload.Value is ItemData;
+                case DragPayloadType.EquippedItem:
+                    // Allow transferring equipped items to a different unit
+                    if (payload.Value is (ItemData, UnitInstance owner))
+                        return owner != targetUnit;
+                    return false;
                 default:
                     return false;
             }
