@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: DefaultContentDatabase
   m_EditorClassIdentifier: 
   PlayerUnits:
-  - {fileID: 11400000, guid: e542a66a91e467948a23a1bbb6e236e8, type: 2}
-  - {fileID: 11400000, guid: 847ab8642dd0b37429b5dc5658739b52, type: 2}
-  - {fileID: 11400000, guid: 0e3a224628146ba468eda0e9a12133ec, type: 2}
+  - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}
+  - {fileID: 11400000, guid: a89e2e3990ef63747b3a9c0f4fca2794, type: 2}
+  - {fileID: 11400000, guid: d6c5ffc1d7f177b418f2ad7db9461949, type: 2}
   EnemyUnits:
   - {fileID: 11400000, guid: 85f0e39939cea5d48ba19f9f403060e6, type: 2}
   - {fileID: 11400000, guid: 915d5816a5a0d0f4ab5f08a1b1ba9f7f, type: 2}
