@@ -60,13 +60,20 @@ namespace AutobattlerSample.Battle
                     if (targets.Count == 0) break;
 
                     var target = targets[UnityEngine.Random.Range(0, targets.Count)];
-                    int damage = target.TakeDamage(unit.Attack);
+                    int hpBefore = target.CurrentHP;
+                    int rawDamage = unit.Attack;
+                    int targetArmor = target.Armor;
+                    int damage = target.TakeDamage(rawDamage);
 
                     var action = new TurnAction
                     {
                         Attacker = unit,
                         Target = target,
+                        RawDamage = rawDamage,
+                        TargetArmor = targetArmor,
                         DamageDealt = damage,
+                        TargetHPBefore = hpBefore,
+                        TargetHPAfter = target.CurrentHP,
                         KilledTarget = !target.IsAlive
                     };
 

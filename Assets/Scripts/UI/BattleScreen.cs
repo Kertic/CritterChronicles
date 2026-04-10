@@ -20,8 +20,9 @@ namespace AutobattlerSample.UI
 
         private readonly Dictionary<BattleUnit, UnitVisual> _unitVisuals = new();
         private readonly Dictionary<BattleUnit, Vector2> _unitPositions = new();
+        private CombatLog _combatLog;
 
-        private static readonly Color[] AllyColors =
+        private static readonly Color[] allyColors =
         {
             new Color(0.2f, 0.55f, 0.9f),
             new Color(0.3f, 0.75f, 0.35f),
@@ -29,7 +30,7 @@ namespace AutobattlerSample.UI
             new Color(0.9f, 0.7f, 0.2f)
         };
 
-        private static readonly Color[] EnemyColors =
+        private static readonly Color[] enemyColors =
         {
             new Color(0.9f, 0.25f, 0.2f),
             new Color(0.9f, 0.5f, 0.15f),
@@ -39,8 +40,10 @@ namespace AutobattlerSample.UI
 
         public static BattleScreen Create(Transform parent, Action<bool> onContinue)
         {
-            var screen = new BattleScreen();
-            screen._onContinue = onContinue;
+            var screen = new BattleScreen
+            {
+                _onContinue = onContinue
+            };
 
             var canvas = UIFactory.CreateRootCanvas(parent);
             screen._root = UIFactory.CreatePanel("BattleScreen", canvas.transform, Vector2.zero, Vector2.one);
@@ -113,6 +116,9 @@ namespace AutobattlerSample.UI
                 CreateUnitVisual(bu, pos, false, i);
             }
 
+            // Create combat log panel
+            _combatLog = CombatLog.Create(_content);
+
             return (allyBattleUnits, enemyBattleUnits);
         }
 
@@ -145,6 +151,9 @@ namespace AutobattlerSample.UI
                 Color dmgColor = action.Attacker.IsAlly ? new Color(1f, 1f, 0.3f) : new Color(1f, 0.3f, 0.3f);
                 DamageNumber.Spawn(_content, targetPos + new Vector2(0, 55f), action.DamageDealt, dmgColor);
             }
+
+            // Append to combat log
+            _combatLog?.AddEntry(action);
         }
 
         public void ShowResult(bool playerWon)
@@ -186,7 +195,7 @@ namespace AutobattlerSample.UI
             containerRt.sizeDelta = Vector2.zero;
 
             // Shape: square for allies, circle for enemies
-            Color color = isAlly ? AllyColors[index % AllyColors.Length] : EnemyColors[index % EnemyColors.Length];
+            Color color = isAlly ? allyColors[index % allyColors.Length] : enemyColors[index % enemyColors.Length];
             Image shape;
             if (isAlly)
                 shape = UIFactory.CreateSquare(container.transform, color, 80f);
