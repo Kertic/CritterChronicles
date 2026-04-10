@@ -29,27 +29,19 @@ namespace AutobattlerSample.Core
 
         /// <summary>
         /// Generate a set of random critters for the player to pick from at start.
+        /// Uses the narrow StartingUnits pool (falls back to PlayerUnits).
         /// </summary>
         public List<UnitData> GenerateStartingPicks(int count = 5)
         {
             var picks = new List<UnitData>();
             if (_database == null) return picks;
 
-            // Combine player units and shop units into a pool
+            // Use the narrow starting pool only
             var pool = new List<UnitData>();
-            if (_database.PlayerUnits != null) pool.AddRange(_database.PlayerUnits);
-            if (_database.ShopUnits != null)
-            {
-                foreach (var u in _database.ShopUnits)
-                {
-                    bool already = false;
-                    foreach (var p in pool)
-                    {
-                        if (p != null && u != null && p.UnitId == u.UnitId) { already = true; break; }
-                    }
-                    if (!already && u != null) pool.Add(u);
-                }
-            }
+            if (_database.StartingUnits != null && _database.StartingUnits.Count > 0)
+                pool.AddRange(_database.StartingUnits);
+            else if (_database.PlayerUnits != null)
+                pool.AddRange(_database.PlayerUnits);
 
             var used = new HashSet<int>();
             for (int i = 0; i < count && used.Count < pool.Count; i++)
@@ -69,8 +61,8 @@ namespace AutobattlerSample.Core
 
         public EncounterData GenerateEncounter(int floor, int nodeIndex)
         {
-            int enemyCount = Mathf.Clamp(2 + floor / 2, 2, 5);
-            float scaleFactor = 1f + floor * 0.15f;
+            int enemyCount = Mathf.Clamp(2 + floor / 2, 2, 7);
+            float scaleFactor = 1f + floor * 0.25f;
 
             var encounter = new EncounterData
             {
@@ -93,15 +85,16 @@ namespace AutobattlerSample.Core
             encounter.DisplayName = "Elite: " + encounter.DisplayName;
             foreach (var enemy in encounter.Enemies)
             {
-                enemy.BonusHP += 10;
+                enemy.BonusHP += 10 + floor * 3;
                 enemy.FullHeal();
             }
             return encounter;
         }
 
-        public EncounterData GenerateBossEncounter()
+        public EncounterData GenerateBossEncounter(int floor = 0)
         {
             var template = GetRandomUnit(_database != null ? _database.BossUnits : null);
+            float bossScale = 1f + floor * 0.2f;
             var encounter = new EncounterData
             {
                 DisplayName = template != null ? template.DisplayName + "'s Lair" : "Boss Lair",
@@ -109,14 +102,15 @@ namespace AutobattlerSample.Core
             };
 
             if (template != null)
-                encounter.Enemies.Add(new UnitInstance(template));
+                encounter.Enemies.Add(CreateScaledInstance(template, bossScale));
 
             int minionCount = Random.Range(2, 4);
+            float minionScale = 1.3f + floor * 0.15f;
             for (int i = 0; i < minionCount; i++)
             {
                 var minionTemplate = GetRandomUnit(_database != null ? _database.EnemyUnits : null);
                 if (minionTemplate != null)
-                    encounter.Enemies.Add(CreateScaledInstance(minionTemplate, 1.3f));
+                    encounter.Enemies.Add(CreateScaledInstance(minionTemplate, minionScale));
             }
             return encounter;
         }

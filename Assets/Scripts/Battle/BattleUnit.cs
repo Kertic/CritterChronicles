@@ -90,18 +90,21 @@ namespace AutobattlerSample.Battle
 
         /// <summary>
         /// If unit has HasteOnHeal passive, haste its first Attack action by amount.
+        /// Returns (triggered, actionName, cdBefore, cdAfter).
         /// </summary>
-        public void TriggerHasteOnHeal(int hasteAmount)
+        public (bool triggered, string actionName, int cdBefore, int cdAfter) TriggerHasteOnHeal(int hasteAmount)
         {
-            if (Passive != PassiveType.HasteOnHeal) return;
+            if (Passive != PassiveType.HasteOnHeal) return (false, null, 0, 0);
             foreach (var a in Actions)
             {
                 if (a.Type == ActionType.Attack)
                 {
+                    int before = a.CurrentCooldown;
                     a.Haste(hasteAmount);
-                    break;
+                    return (true, a.DisplayName, before, a.CurrentCooldown);
                 }
             }
+            return (false, null, 0, 0);
         }
 
         public void WriteBackHP()

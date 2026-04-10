@@ -34,6 +34,38 @@ namespace AutobattlerSample.Data
                     unit.AddAction(new ActionData(Name, GrantedActionType, GrantedActionAmount, GrantedActionCooldown));
                     break;
             }
+            if (!unit.EquippedItems.Contains(this))
+                unit.EquippedItems.Add(this);
+        }
+
+        public void UnapplyFrom(UnitInstance unit)
+        {
+            switch (Type)
+            {
+                case ItemType.MaxHP:
+                    unit.BonusHP -= Amount;
+                    if (unit.CurrentHP > unit.EffectiveMaxHP)
+                        unit.CurrentHP = unit.EffectiveMaxHP;
+                    break;
+                case ItemType.CooldownReduction:
+                    unit.BonusCooldownReduction -= Amount;
+                    if (unit.BonusCooldownReduction < 0) unit.BonusCooldownReduction = 0;
+                    unit.RebuildActions();
+                    break;
+                case ItemType.Shield:
+                case ItemType.ActionGrant:
+                    // Remove the action granted by this item (matched by name)
+                    for (int i = unit.Actions.Count - 1; i >= 0; i--)
+                    {
+                        if (unit.Actions[i].Data != null && unit.Actions[i].Data.DisplayName == Name)
+                        {
+                            unit.Actions.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    break;
+            }
+            unit.EquippedItems.Remove(this);
         }
 
         public string TypeName
@@ -52,6 +84,7 @@ namespace AutobattlerSample.Data
                             case ActionType.ShieldSelf: return "Shield Action";
                             case ActionType.HealSelf: return "Heal Self Action";
                             case ActionType.HealFront: return "Heal Front Action";
+                            case ActionType.HealAll: return "Heal All Action";
                             default: return "Action";
                         }
                     default: return "???";

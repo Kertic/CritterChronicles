@@ -27,8 +27,8 @@ namespace AutobattlerSample.Editor
             // Game bootstrap
             var systems = new GameObject("Systems");
             var bootstrap = systems.AddComponent<GameBootstrap>();
-            bootstrap.Floors = 10;
-            bootstrap.Width = 4;
+            bootstrap.Floors = 15;
+            bootstrap.Width = 5;
             bootstrap.Seed = 0;
 
             var serializedBootstrap = new SerializedObject(bootstrap);

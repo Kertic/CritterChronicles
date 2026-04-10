@@ -11,8 +11,8 @@ namespace AutobattlerSample.Core
     public class GameBootstrap : MonoBehaviour
     {
         [Header("Map Settings")]
-        public int Floors = 10;
-        public int Width = 4;
+        public int Floors = 15;
+        public int Width = 5;
         public int Seed = 0;
 
         [Header("Content")]
@@ -26,6 +26,7 @@ namespace AutobattlerSample.Core
         private ShopScreen _shopScreen;
         private ManageTeamScreen _manageTeamScreen;
         private StartPickScreen _startPickScreen;
+        private InstructionScreen _instructionScreen;
         private BattleCombatManager _combatManager;
         private BattleResult _lastBattleResult;
         private ContentGenerator _contentGenerator;
@@ -58,17 +59,25 @@ namespace AutobattlerSample.Core
 
         private void BuildScreens()
         {
-            _mapScreen = MapScreen.Create(transform, OnNodeSelected, OnManageTeam);
+            _mapScreen = MapScreen.Create(transform, OnNodeSelected, OnManageTeam, ShowInstructions);
             _battleScreen = BattleScreen.Create(transform, OnBattleContinue);
             _rewardScreen = RewardScreen.Create(transform, OnRewardSelected);
             _restScreen = RestScreen.Create(transform, OnRestContinue);
             _shopScreen = ShopScreen.Create(transform, OnShopComplete);
             _manageTeamScreen = ManageTeamScreen.Create(transform, OnManageTeamDone);
-            _startPickScreen = StartPickScreen.Create(transform, OnStartingPicksDone);
+            _startPickScreen = StartPickScreen.Create(transform, OnStartingPicksDone, ShowInstructions);
+            _instructionScreen = InstructionScreen.Create(transform, () => { });
 
             var cmGo = new GameObject("CombatManager");
             cmGo.transform.SetParent(transform);
             _combatManager = cmGo.AddComponent<BattleCombatManager>();
+
+            _battleScreen.SetCombatManager(_combatManager);
+        }
+
+        private void ShowInstructions()
+        {
+            _instructionScreen.Show();
         }
 
         public void StartRun()
@@ -76,6 +85,7 @@ namespace AutobattlerSample.Core
             _runState = new RunState();
             _runState.Team.Clear();
             _runState.CampRoster.Clear();
+            _runState.CampItems.Clear();
 
             // Show starting pick screen
             var picks = _contentGenerator.GenerateStartingPicks(6);
@@ -118,6 +128,7 @@ namespace AutobattlerSample.Core
             _manageTeamScreen.Hide();
             _mapScreen.Hide();
             _startPickScreen.Hide();
+            _instructionScreen.Hide();
         }
 
         private void ShowMap()
@@ -260,4 +271,3 @@ namespace AutobattlerSample.Core
         }
     }
 }
-

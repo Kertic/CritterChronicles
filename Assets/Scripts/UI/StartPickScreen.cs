@@ -12,14 +12,16 @@ namespace AutobattlerSample.UI
         private GameObject _root;
         private RectTransform _content;
         private Action<List<UnitData>> _onDone;
+        private Action _onHelp;
         private List<UnitData> _picks;
         private readonly List<UnitData> _selected = new();
         private int _maxPicks;
 
-        public static StartPickScreen Create(Transform parent, Action<List<UnitData>> onDone)
+        public static StartPickScreen Create(Transform parent, Action<List<UnitData>> onDone, Action onHelp = null)
         {
             var screen = new StartPickScreen();
             screen._onDone = onDone;
+            screen._onHelp = onHelp;
 
             var canvas = UIFactory.CreateRootCanvas(parent);
             screen._root = UIFactory.CreatePanel("StartPickScreen", canvas.transform, Vector2.zero, Vector2.one);
@@ -51,6 +53,28 @@ namespace AutobattlerSample.UI
                 "Click critters to select them for your team. Large creatures cost 2 slots.", 20);
             desc.color = new Color(0.7f, 0.7f, 0.8f);
             SetRect(desc.rectTransform, new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.88f));
+
+            if (_onHelp != null)
+            {
+                var helpBtn = UIFactory.CreateButton("Help", _content, "?");
+                var helpBtnRt = helpBtn.GetComponent<RectTransform>();
+                helpBtnRt.anchorMin = new Vector2(1f, 1f);
+                helpBtnRt.anchorMax = new Vector2(1f, 1f);
+                helpBtnRt.pivot = new Vector2(1f, 1f);
+                helpBtnRt.sizeDelta = new Vector2(45f, 45f);
+                helpBtnRt.anchoredPosition = new Vector2(-20f, -10f);
+                var helpLabel = helpBtn.GetComponentInChildren<Text>();
+                if (helpLabel != null)
+                {
+                    helpLabel.fontSize = 26;
+                    helpLabel.fontStyle = FontStyle.Bold;
+                }
+                var helpColors = helpBtn.colors;
+                helpColors.normalColor = new Color(0.35f, 0.3f, 0.45f);
+                helpColors.highlightedColor = new Color(0.45f, 0.4f, 0.55f);
+                helpBtn.colors = helpColors;
+                helpBtn.onClick.AddListener(() => _onHelp?.Invoke());
+            }
 
             float cardWidth = 0.8f / Mathf.Max(_picks.Count, 1);
             for (int i = 0; i < _picks.Count; i++)

@@ -17,6 +17,7 @@ namespace AutobattlerSample.Data
         public bool IsActive = true; // true = in party, false = at camp
 
         public List<ActionInstance> Actions = new();
+        public List<ItemData> EquippedItems = new();
 
         public string DisplayName => BaseData != null ? BaseData.DisplayName : "Unit";
         public int EffectiveMaxHP => (BaseData != null ? BaseData.MaxHP + BaseData.RankUpBonusHP * (Rank - 1) : 0) + BonusHP;
@@ -132,7 +133,8 @@ namespace AutobattlerSample.Data
                 CurrentHP = CurrentHP,
                 Position = Position,
                 IsActive = IsActive,
-                Actions = new List<ActionInstance>()
+                Actions = new List<ActionInstance>(),
+                EquippedItems = new List<ItemData>(EquippedItems)
             };
             foreach (var action in Actions)
                 clone.Actions.Add(action.Clone());

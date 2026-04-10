@@ -22,6 +22,9 @@ namespace AutobattlerSample.UI
         private readonly Dictionary<BattleUnit, UnitVisual> _unitVisuals = new();
         private readonly Dictionary<BattleUnit, Vector2> _unitPositions = new();
         private CombatLog _combatLog;
+        private BattleCombatManager _combatManager;
+        private Button _pauseBtn;
+        private Text _pauseBtnLabel;
 
         private static readonly Color[] allyColors =
         {
@@ -55,6 +58,11 @@ namespace AutobattlerSample.UI
             screen._content = screen._root.GetComponent<RectTransform>();
             screen._root.SetActive(false);
             return screen;
+        }
+
+        public void SetCombatManager(BattleCombatManager manager)
+        {
+            _combatManager = manager;
         }
 
         public (List<BattleUnit> allies, List<BattleUnit> enemies) ShowBattle(
@@ -137,6 +145,29 @@ namespace AutobattlerSample.UI
 
             // Create combat log panel
             _combatLog = CombatLog.Create(_content);
+
+            // Pause button
+            _pauseBtn = UIFactory.CreateButton("PauseBtn", _content, "\u23F8 Pause");
+            var pauseRt = _pauseBtn.GetComponent<RectTransform>();
+            pauseRt.anchorMin = new Vector2(1f, 1f);
+            pauseRt.anchorMax = new Vector2(1f, 1f);
+            pauseRt.pivot = new Vector2(1f, 1f);
+            pauseRt.sizeDelta = new Vector2(120f, 40f);
+            pauseRt.anchoredPosition = new Vector2(-20f, -15f);
+            _pauseBtn.GetComponent<Image>().color = new Color(0.3f, 0.25f, 0.4f);
+            _pauseBtnLabel = _pauseBtn.GetComponentInChildren<Text>();
+            if (_pauseBtnLabel != null) { _pauseBtnLabel.fontSize = 18; _pauseBtnLabel.fontStyle = FontStyle.Bold; }
+            _pauseBtn.onClick.AddListener(() =>
+            {
+                if (_combatManager != null)
+                {
+                    _combatManager.TogglePause();
+                    _pauseBtnLabel.text = _combatManager.IsPaused ? "\u25B6 Resume" : "\u23F8 Pause";
+                    _pauseBtn.GetComponent<Image>().color = _combatManager.IsPaused
+                        ? new Color(0.2f, 0.45f, 0.2f)
+                        : new Color(0.3f, 0.25f, 0.4f);
+                }
+            });
 
             return (allyBattleUnits, enemyBattleUnits);
         }

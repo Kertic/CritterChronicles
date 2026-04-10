@@ -28,5 +28,13 @@ namespace AutobattlerSample.Battle
 
         /// <summary>Per-unit heal results for HealAll actions.</summary>
         public List<(BattleUnit unit, int healed)> HealAllResults;
+
+        // Passive trigger tracking
+        public bool LifestealTriggered;
+        public bool HasteTriggered;
+        public string HasteUnitName;
+        public string HasteActionName;
+        public int HasteCooldownBefore;
+        public int HasteCooldownAfter;
     }
 }

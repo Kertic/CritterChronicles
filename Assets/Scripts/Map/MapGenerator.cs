@@ -32,7 +32,7 @@ namespace AutobattlerSample.Map
                     if (isBossFloor)
                     {
                         nodeType = MapNodeType.Boss;
-                        encounter = _contentGenerator.GenerateBossEncounter();
+                        encounter = _contentGenerator.GenerateBossEncounter(floor);
                     }
                     else if (floor == 0)
                     {

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using AutobattlerSample.Battle;
 using AutobattlerSample.Data;
 using UnityEngine;
@@ -55,7 +56,7 @@ namespace AutobattlerSample.UI
             layout.childControlWidth = false;
             layout.childControlHeight = false;
 
-            foreach (var action in Unit.Actions)
+            foreach (var action in Unit.Actions.OrderBy(a => a.Priority))
             {
                 var actionVisual = ActionVisual.Create(containerGo.transform, action, 36f);
                 _actionVisuals.Add(actionVisual);

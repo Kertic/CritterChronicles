@@ -15,6 +15,14 @@ namespace AutobattlerSample.Battle
         private Action<BattleResult> _onBattleEnd;
         private Action<int> _onNewRound;
         private Coroutine _battleCoroutine;
+        private bool _isPaused;
+
+        public bool IsPaused => _isPaused;
+
+        public void TogglePause()
+        {
+            _isPaused = !_isPaused;
+        }
 
         public void StartBattle(List<BattleUnit> allies, List<BattleUnit> enemies,
             Action<TurnAction> onTurnAction, Action<BattleResult> onBattleEnd,
@@ -39,6 +47,7 @@ namespace AutobattlerSample.Battle
 
         private IEnumerator RunBattle()
         {
+            _isPaused = false;
             yield return new WaitForSeconds(0.5f);
 
             var result = new BattleResult();
@@ -82,6 +91,7 @@ namespace AutobattlerSample.Battle
                         };
                         result.TurnLog.Add(skipAction);
                         _onTurnAction?.Invoke(skipAction);
+                        yield return new WaitUntil(() => !_isPaused);
                         yield return new WaitForSeconds(0.25f);
                         continue;
                     }
@@ -111,6 +121,7 @@ namespace AutobattlerSample.Battle
                     {
                         result.TurnLog.Add(action);
                         _onTurnAction?.Invoke(action);
+                        yield return new WaitUntil(() => !_isPaused);
                         yield return new WaitForSeconds(0.7f);
                     }
                 }
@@ -160,14 +171,31 @@ namespace AutobattlerSample.Battle
 
             // Lifesteal
             int lifestealHealed = 0;
+            bool lifestealTriggered = false;
+            bool hasteTriggered = false;
+            string hasteUnitName = null;
+            string hasteActionName = null;
+            int hasteCdBefore = 0, hasteCdAfter = 0;
+
             if (unit.Passive == PassiveType.Lifesteal)
             {
                 int hpDamage = rawDamage - shieldAbsorbed;
                 if (hpDamage > 0)
                 {
                     lifestealHealed = unit.Heal(hpDamage);
+                    lifestealTriggered = lifestealHealed > 0;
                     if (lifestealHealed > 0)
-                        unit.TriggerHasteOnHeal(1);
+                    {
+                        var haste = unit.TriggerHasteOnHeal(1);
+                        if (haste.triggered)
+                        {
+                            hasteTriggered = true;
+                            hasteUnitName = unit.DisplayName;
+                            hasteActionName = haste.actionName;
+                            hasteCdBefore = haste.cdBefore;
+                            hasteCdAfter = haste.cdAfter;
+                        }
+                    }
                 }
             }
 
@@ -189,6 +217,12 @@ namespace AutobattlerSample.Battle
                 AttackerCooldownAfter = readyAction.CurrentCooldown,
                 AttackerRank = unit.Rank,
                 LifestealHealed = lifestealHealed,
+                LifestealTriggered = lifestealTriggered,
+                HasteTriggered = hasteTriggered,
+                HasteUnitName = hasteUnitName,
+                HasteActionName = hasteActionName,
+                HasteCooldownBefore = hasteCdBefore,
+                HasteCooldownAfter = hasteCdAfter,
                 TurnNumber = round
             };
         }
@@ -221,8 +255,22 @@ namespace AutobattlerSample.Battle
             int healed = unit.Heal(readyAction.Amount);
             readyAction.StartCooldown();
 
+            bool hasteTriggered = false;
+            string hasteUnitName = null, hasteActionName = null;
+            int hasteCdBefore = 0, hasteCdAfter = 0;
+
             if (healed > 0)
-                unit.TriggerHasteOnHeal(1);
+            {
+                var haste = unit.TriggerHasteOnHeal(1);
+                if (haste.triggered)
+                {
+                    hasteTriggered = true;
+                    hasteUnitName = unit.DisplayName;
+                    hasteActionName = haste.actionName;
+                    hasteCdBefore = haste.cdBefore;
+                    hasteCdAfter = haste.cdAfter;
+                }
+            }
 
             return new TurnAction
             {
@@ -237,6 +285,11 @@ namespace AutobattlerSample.Battle
                 AttackerRank = unit.Rank,
                 TargetHPBefore = hpBefore,
                 TargetHPAfter = unit.CurrentHP,
+                HasteTriggered = hasteTriggered,
+                HasteUnitName = hasteUnitName,
+                HasteActionName = hasteActionName,
+                HasteCooldownBefore = hasteCdBefore,
+                HasteCooldownAfter = hasteCdAfter,
                 TurnNumber = round
             };
         }
@@ -257,8 +310,22 @@ namespace AutobattlerSample.Battle
             int healed = target.Heal(readyAction.Amount);
             readyAction.StartCooldown();
 
+            bool hasteTriggered = false;
+            string hasteUnitName = null, hasteActionName = null;
+            int hasteCdBefore = 0, hasteCdAfter = 0;
+
             if (healed > 0)
-                target.TriggerHasteOnHeal(1);
+            {
+                var haste = target.TriggerHasteOnHeal(1);
+                if (haste.triggered)
+                {
+                    hasteTriggered = true;
+                    hasteUnitName = target.DisplayName;
+                    hasteActionName = haste.actionName;
+                    hasteCdBefore = haste.cdBefore;
+                    hasteCdAfter = haste.cdAfter;
+                }
+            }
 
             return new TurnAction
             {
@@ -273,6 +340,11 @@ namespace AutobattlerSample.Battle
                 AttackerRank = unit.Rank,
                 TargetHPBefore = hpBefore,
                 TargetHPAfter = target.CurrentHP,
+                HasteTriggered = hasteTriggered,
+                HasteUnitName = hasteUnitName,
+                HasteActionName = hasteActionName,
+                HasteCooldownBefore = hasteCdBefore,
+                HasteCooldownAfter = hasteCdAfter,
                 TurnNumber = round
             };
         }
@@ -283,6 +355,10 @@ namespace AutobattlerSample.Battle
             int totalHealed = 0;
             var results = new List<(BattleUnit unit, int healed)>();
 
+            bool hasteTriggered = false;
+            string hasteUnitName = null, hasteActionName = null;
+            int hasteCdBefore = 0, hasteCdAfter = 0;
+
             foreach (var ally in allies)
             {
                 if (!ally.IsAlive) continue;
@@ -290,7 +366,17 @@ namespace AutobattlerSample.Battle
                 totalHealed += healed;
                 results.Add((ally, healed));
                 if (healed > 0)
-                    ally.TriggerHasteOnHeal(1);
+                {
+                    var haste = ally.TriggerHasteOnHeal(1);
+                    if (haste.triggered && !hasteTriggered)
+                    {
+                        hasteTriggered = true;
+                        hasteUnitName = ally.DisplayName;
+                        hasteActionName = haste.actionName;
+                        hasteCdBefore = haste.cdBefore;
+                        hasteCdAfter = haste.cdAfter;
+                    }
+                }
             }
 
             readyAction.StartCooldown();
@@ -309,6 +395,11 @@ namespace AutobattlerSample.Battle
                 AttackerRank = unit.Rank,
                 TargetHPBefore = 0,
                 TargetHPAfter = 0,
+                HasteTriggered = hasteTriggered,
+                HasteUnitName = hasteUnitName,
+                HasteActionName = hasteActionName,
+                HasteCooldownBefore = hasteCdBefore,
+                HasteCooldownAfter = hasteCdAfter,
                 TurnNumber = round
             };
         }

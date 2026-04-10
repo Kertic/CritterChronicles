@@ -56,6 +56,9 @@ namespace AutobattlerSample.Editor
                     })
             };
 
+            // --- Starting Units (narrow pool for starting picks) ---
+            database.StartingUnits = new List<UnitData>(database.PlayerUnits);
+
             // --- Enemy Units (expanded roster) ---
             database.EnemyUnits = new List<UnitData>
             {
@@ -233,7 +236,8 @@ namespace AutobattlerSample.Editor
             database.FloorEncounterNames = new List<string>
             {
                 "Scouts", "Raiders", "Warband", "Horde", "Vanguard",
-                "Marauders", "Siege", "Legion", "Dread Host"
+                "Marauders", "Siege", "Legion", "Dread Host", "Dark Tide",
+                "Iron Fang", "Shadow March", "Blood Pact", "Doom Brigade"
             };
 
             EditorUtility.SetDirty(database);

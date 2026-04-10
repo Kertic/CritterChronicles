@@ -11,6 +11,7 @@ namespace AutobattlerSample.Core
         public readonly List<UnitInstance> Team = new();
         public readonly List<UnitInstance> CampRoster = new();
         public readonly List<ItemData> CollectedItems = new();
+        public readonly List<ItemData> CampItems = new();
         public bool IsGameOver;
         public bool IsVictory;
 

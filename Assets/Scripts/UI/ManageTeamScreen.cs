@@ -15,6 +15,7 @@ namespace AutobattlerSample.UI
         private Action _onDone;
         private RunState _runState;
         private UnitInstance _selectedUnit; // for action priority editing
+        private ItemData _equipItem; // item being equipped from camp
 
         public static ManageTeamScreen Create(Transform parent, Action onDone)
         {
@@ -32,6 +33,7 @@ namespace AutobattlerSample.UI
         {
             _runState = state;
             _selectedUnit = null;
+            _equipItem = null;
             _root.SetActive(true);
             Rebuild();
         }
@@ -195,6 +197,39 @@ namespace AutobattlerSample.UI
                         });
                     }
                 }
+
+                // Equipped items for selected unit
+                if (_selectedUnit.EquippedItems.Count > 0)
+                {
+                    float itemY = actionY - 0.04f - sortedActions.Count * 0.035f - 0.02f;
+                    var itemTitle = UIFactory.CreateText("ItemTitle", _content,
+                        $"Equipped Items on {_selectedUnit.DisplayName}", 16);
+                    itemTitle.color = new Color(0.6f, 0.85f, 0.6f);
+                    SetRect(itemTitle.rectTransform, new Vector2(0.02f, itemY - 0.03f), new Vector2(0.98f, itemY));
+
+                    for (int k = 0; k < _selectedUnit.EquippedItems.Count; k++)
+                    {
+                        var item = _selectedUnit.EquippedItems[k];
+                        float iy = itemY - 0.04f - k * 0.035f;
+                        string itemLabel = $"{item.Name} ({item.TypeName})";
+                        var iText = UIFactory.CreateText($"Item_{k}", _content, itemLabel, 14, TextAnchor.MiddleLeft);
+                        iText.color = new Color(0.8f, 0.9f, 0.8f);
+                        SetRect(iText.rectTransform, new Vector2(0.1f, iy - 0.03f), new Vector2(0.7f, iy));
+
+                        var capturedItem = item;
+                        var capturedUnit2 = _selectedUnit;
+                        var unequipBtn = UIFactory.CreateButton($"Unequip_{k}", _content, "Unequip");
+                        SetRect(unequipBtn.GetComponent<RectTransform>(), new Vector2(0.72f, iy - 0.03f), new Vector2(0.85f, iy));
+                        unequipBtn.GetComponentInChildren<Text>().fontSize = 12;
+                        unequipBtn.GetComponent<Image>().color = new Color(0.5f, 0.3f, 0.2f);
+                        unequipBtn.onClick.AddListener(() =>
+                        {
+                            capturedItem.UnapplyFrom(capturedUnit2);
+                            _runState.CampItems.Add(capturedItem);
+                            Rebuild();
+                        });
+                    }
+                }
             }
 
             // Camp roster section
@@ -223,6 +258,72 @@ namespace AutobattlerSample.UI
                     activateBtn.onClick.AddListener(() =>
                     {
                         _runState.ActivateFromCamp(capturedCamp);
+                        Rebuild();
+                    });
+                }
+            }
+
+            // Camp Items section
+            if (_runState.CampItems.Count > 0)
+            {
+                var campItemLabel = UIFactory.CreateText("CampItemLabel", _content, "CAMP ITEMS (click to equip)", 16);
+                campItemLabel.color = new Color(0.6f, 0.85f, 0.6f);
+                campItemLabel.fontStyle = FontStyle.Bold;
+                SetRect(campItemLabel.rectTransform, new Vector2(0.52f, 0.12f), new Vector2(0.98f, 0.17f));
+
+                for (int ci = 0; ci < _runState.CampItems.Count; ci++)
+                {
+                    var campItem = _runState.CampItems[ci];
+                    float cx = 0.52f + ci * 0.12f;
+                    if (cx + 0.11f > 0.98f) break; // limit display
+
+                    bool isEquipping = _equipItem == campItem;
+                    string ciLabel = isEquipping
+                        ? $"EQUIP\n{campItem.Name}"
+                        : campItem.Name;
+
+                    var ciBtn = UIFactory.CreateButton($"CampItem_{ci}", _content, ciLabel);
+                    SetRect(ciBtn.GetComponent<RectTransform>(), new Vector2(cx, 0.03f), new Vector2(cx + 0.11f, 0.12f));
+                    ciBtn.GetComponentInChildren<Text>().fontSize = 11;
+                    ciBtn.GetComponent<Image>().color = isEquipping
+                        ? new Color(0.2f, 0.4f, 0.2f)
+                        : new Color(0.25f, 0.3f, 0.2f);
+
+                    var capturedCampItem = campItem;
+                    ciBtn.onClick.AddListener(() =>
+                    {
+                        _equipItem = _equipItem == capturedCampItem ? null : capturedCampItem;
+                        Rebuild();
+                    });
+                }
+            }
+
+            // Equip target picker
+            if (_equipItem != null)
+            {
+                var equipTitle = UIFactory.CreateText("EquipTitle", _content,
+                    $"Select a unit to equip \"{_equipItem.Name}\"", 16);
+                equipTitle.color = new Color(1f, 0.9f, 0.5f);
+                SetRect(equipTitle.rectTransform, new Vector2(0.02f, 0.23f), new Vector2(0.98f, 0.27f));
+
+                var allUnits = _runState.Team.Concat(_runState.CampRoster).Where(u => u.IsAlive).ToList();
+                for (int eu = 0; eu < allUnits.Count; eu++)
+                {
+                    var eqUnit = allUnits[eu];
+                    float ex = 0.05f + eu * (0.88f / allUnits.Count);
+                    float ew = 0.85f / allUnits.Count;
+
+                    var eqBtn = UIFactory.CreateButton($"EquipTo_{eu}", _content, eqUnit.DisplayName);
+                    SetRect(eqBtn.GetComponent<RectTransform>(), new Vector2(ex, 0.27f), new Vector2(ex + ew, 0.33f));
+                    eqBtn.GetComponentInChildren<Text>().fontSize = 13;
+                    eqBtn.GetComponent<Image>().color = new Color(0.2f, 0.3f, 0.2f);
+
+                    var capturedEqUnit = eqUnit;
+                    eqBtn.onClick.AddListener(() =>
+                    {
+                        _equipItem.ApplyTo(capturedEqUnit);
+                        _runState.CampItems.Remove(_equipItem);
+                        _equipItem = null;
                         Rebuild();
                     });
                 }
