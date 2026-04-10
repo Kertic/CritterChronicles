@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: bear
   DisplayName: Bear
-  MaxHP: 30
-  Armor: 2
-  AttackDamage: 6
+  Type: 0
+  Size: 2
+  MaxHP: 100
+  Attributes: []
+  BaseAttackDamage: 15
+  AttackCooldown: 5
+  DefaultActions: []
+  Passive: 2
+  RankUpBonusHP: 50
+  DamageScalePerRank: 1

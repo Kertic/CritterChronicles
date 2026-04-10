@@ -25,7 +25,7 @@ namespace AutobattlerSample.Map
             var targets = new List<MapNode>();
             foreach (var child in CurrentNode.Children)
             {
-                if (!child.Visited && child.Type != MapNodeType.Rest && child.Encounter != null)
+                if (!child.Visited && child.Type != MapNodeType.Rest && child.Type != MapNodeType.Shop && child.Encounter != null)
                     targets.Add(child);
             }
 
@@ -36,7 +36,7 @@ namespace AutobattlerSample.Map
                 {
                     foreach (var node in Floors[f])
                     {
-                        if (!node.Visited && node.Type != MapNodeType.Rest && node.Encounter != null)
+                        if (!node.Visited && node.Type != MapNodeType.Rest && node.Type != MapNodeType.Shop && node.Encounter != null)
                             targets.Add(node);
                     }
                     if (targets.Count > 0) break;

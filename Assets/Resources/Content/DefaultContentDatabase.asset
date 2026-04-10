@@ -14,8 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PlayerUnits:
   - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}
-  - {fileID: 11400000, guid: a89e2e3990ef63747b3a9c0f4fca2794, type: 2}
-  - {fileID: 11400000, guid: d6c5ffc1d7f177b418f2ad7db9461949, type: 2}
+  - {fileID: 11400000, guid: 90b029ea21927a3499323bb57beedd00, type: 2}
+  - {fileID: 11400000, guid: 672df5981e5763742b698602c42efcc6, type: 2}
+  - {fileID: 11400000, guid: 4f230768798f26b41b99c089439d7b52, type: 2}
+  StartingUnits:
+  - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}
+  - {fileID: 11400000, guid: 90b029ea21927a3499323bb57beedd00, type: 2}
+  - {fileID: 11400000, guid: 78b4327f9c19ed34b9c7e90fed907372, type: 2}
+  - {fileID: 11400000, guid: 4f230768798f26b41b99c089439d7b52, type: 2}
   EnemyUnits:
   - {fileID: 11400000, guid: 85f0e39939cea5d48ba19f9f403060e6, type: 2}
   - {fileID: 11400000, guid: 915d5816a5a0d0f4ab5f08a1b1ba9f7f, type: 2}
@@ -23,23 +29,59 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b09fcbc9319c10242a06744784b80603, type: 2}
   - {fileID: 11400000, guid: 0d6195348d8eb7a45bb1cf38650b4cb5, type: 2}
   - {fileID: 11400000, guid: b80801aaf9503384e91b11e90d636267, type: 2}
+  - {fileID: 11400000, guid: a89e2e3990ef63747b3a9c0f4fca2794, type: 2}
+  - {fileID: 11400000, guid: 5983bfba211e46e4abddead4fb0a96a3, type: 2}
+  - {fileID: 11400000, guid: 9b1de2219e88df34b98d1c1e75dccf82, type: 2}
+  - {fileID: 11400000, guid: 723a984cd3f93d444b4b65fbbc2aaf3f, type: 2}
+  - {fileID: 11400000, guid: 299178b25c0c0274a86989f2cbd01d1b, type: 2}
+  - {fileID: 11400000, guid: a45cbb5c8a1b0a54fad01940adf3a084, type: 2}
+  - {fileID: 11400000, guid: 9e5d349ee9bc4f24f9292d034ee60980, type: 2}
+  - {fileID: 11400000, guid: 756e0187fb6c47c4d940fe41b8b3d323, type: 2}
   BossUnits:
   - {fileID: 11400000, guid: d11b4aeaca432954d91fc1fbd4d8639f, type: 2}
   - {fileID: 11400000, guid: f05842309adb3f54782d1ed55c951745, type: 2}
   - {fileID: 11400000, guid: cf2eae84375aeb847ac23c0f468d03a1, type: 2}
+  - {fileID: 11400000, guid: e7521ada67bb25845b244a968419c798, type: 2}
+  - {fileID: 11400000, guid: 8da130362f6c92d4d9515577db3347d1, type: 2}
+  ShopUnits:
+  - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}
+  - {fileID: 11400000, guid: 90b029ea21927a3499323bb57beedd00, type: 2}
+  - {fileID: 11400000, guid: 78b4327f9c19ed34b9c7e90fed907372, type: 2}
+  - {fileID: 11400000, guid: 4f230768798f26b41b99c089439d7b52, type: 2}
+  - {fileID: 11400000, guid: 03e9ad6b54fbb2c4e8e2a1fd9625f7ec, type: 2}
+  - {fileID: 11400000, guid: 580188669eac6394cb848cc6a046a686, type: 2}
+  - {fileID: 11400000, guid: 0bdf1d20767f03a449a6d569066fb945, type: 2}
+  - {fileID: 11400000, guid: 468fea2cd0e30ec4dbc714d1b90b21cb, type: 2}
+  - {fileID: 11400000, guid: d07193d254f422646bb443a75c3e1ca7, type: 2}
   RewardItems:
-  - {fileID: 11400000, guid: 90a9ad7c91113954c82b18b7bf72835a, type: 2}
+  - {fileID: 11400000, guid: a88fa38eb50ad924f8e43d140de0ab00, type: 2}
   - {fileID: 11400000, guid: 353d8f8c871c26949876c67c33df191f, type: 2}
-  - {fileID: 11400000, guid: 7cc0d85e52c1de1499a191a7e29b3b40, type: 2}
-  - {fileID: 11400000, guid: f5e6e06c737390a42b1c68e33d3e0611, type: 2}
-  - {fileID: 11400000, guid: 61ac9be1a6c538741a566e0f31266e90, type: 2}
-  - {fileID: 11400000, guid: 8961b0335077b7f4b8388ac4a11233d9, type: 2}
-  - {fileID: 11400000, guid: 68250c5677fbd864a805d4b2deb1a565, type: 2}
-  - {fileID: 11400000, guid: 665ed54611c6b034c8f5c218992a888b, type: 2}
-  - {fileID: 11400000, guid: 7f1625b5815f12e41849f443bc59c9eb, type: 2}
+  - {fileID: 11400000, guid: 5bd8429bb21aaf94db486bc12683d994, type: 2}
+  - {fileID: 11400000, guid: 10af88401fad0294dbedaa4de882361a, type: 2}
+  - {fileID: 11400000, guid: dfd9bca1efb31494189031c54591121f, type: 2}
+  - {fileID: 11400000, guid: 90a9ad7c91113954c82b18b7bf72835a, type: 2}
+  - {fileID: 11400000, guid: e6f35f718b9bddc418ffa4d83d1006b4, type: 2}
+  - {fileID: 11400000, guid: 39aa07717c87f954a86185c9488fe470, type: 2}
+  - {fileID: 11400000, guid: 0c64298883fa2ca45b46d639f9a601b4, type: 2}
+  - {fileID: 11400000, guid: 39761e05748740a4a9e817d9acab88e3, type: 2}
+  - {fileID: 11400000, guid: dddacac0b5554b9448f06907d1af7d93, type: 2}
+  - {fileID: 11400000, guid: 619f069ed0dc8a640bfab0ff61dddf5f, type: 2}
+  - {fileID: 11400000, guid: ee27ab90eacc7a24784dd8f837af2f8f, type: 2}
+  - {fileID: 11400000, guid: 7e3559753aafac54ca2cb4294045d399, type: 2}
+  - {fileID: 11400000, guid: 7060fddb6cf8e264d9451afeca253772, type: 2}
+  - {fileID: 11400000, guid: aa5eec6ecf5c17944952fd8d6fdaf215, type: 2}
   FloorEncounterNames:
   - Scouts
   - Raiders
   - Warband
   - Horde
+  - Vanguard
+  - Marauders
+  - Siege
   - Legion
+  - Dread Host
+  - Dark Tide
+  - Iron Fang
+  - Shadow March
+  - Blood Pact
+  - Doom Brigade

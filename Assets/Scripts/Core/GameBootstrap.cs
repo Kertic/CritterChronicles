@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AutobattlerSample.Battle;
 using AutobattlerSample.Data;
 using AutobattlerSample.Map;
@@ -10,8 +11,8 @@ namespace AutobattlerSample.Core
     public class GameBootstrap : MonoBehaviour
     {
         [Header("Map Settings")]
-        public int Floors = 6;
-        public int Width = 3;
+        public int Floors = 15;
+        public int Width = 5;
         public int Seed = 0;
 
         [Header("Content")]
@@ -22,6 +23,10 @@ namespace AutobattlerSample.Core
         private BattleScreen _battleScreen;
         private RewardScreen _rewardScreen;
         private RestScreen _restScreen;
+        private ShopScreen _shopScreen;
+        private ManageTeamScreen _manageTeamScreen;
+        private StartPickScreen _startPickScreen;
+        private InstructionScreen _instructionScreen;
         private BattleCombatManager _combatManager;
         private BattleResult _lastBattleResult;
         private ContentGenerator _contentGenerator;
@@ -54,32 +59,81 @@ namespace AutobattlerSample.Core
 
         private void BuildScreens()
         {
-            _mapScreen = MapScreen.Create(transform, OnNodeSelected);
+            _mapScreen = MapScreen.Create(transform, OnNodeSelected, OnManageTeam, ShowInstructions);
             _battleScreen = BattleScreen.Create(transform, OnBattleContinue);
             _rewardScreen = RewardScreen.Create(transform, OnRewardSelected);
             _restScreen = RestScreen.Create(transform, OnRestContinue);
+            _shopScreen = ShopScreen.Create(transform, OnShopComplete);
+            _manageTeamScreen = ManageTeamScreen.Create(transform, OnManageTeamDone);
+            _startPickScreen = StartPickScreen.Create(transform, OnStartingPicksDone, ShowInstructions);
+            _instructionScreen = InstructionScreen.Create(transform, () => { });
 
-            // Create combat manager as a child MonoBehaviour for coroutine support
             var cmGo = new GameObject("CombatManager");
             cmGo.transform.SetParent(transform);
             _combatManager = cmGo.AddComponent<BattleCombatManager>();
+
+            _battleScreen.SetCombatManager(_combatManager);
+        }
+
+        private void ShowInstructions()
+        {
+            _instructionScreen.Show();
         }
 
         public void StartRun()
         {
             _runState = new RunState();
             _runState.Team.Clear();
-            _runState.Team.AddRange(_contentGenerator.GeneratePlayerTeam());
-            _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
+            _runState.CampRoster.Clear();
+            _runState.CampItems.Clear();
 
+            // Show starting pick screen
+            var picks = _contentGenerator.GenerateStartingPicks(6);
+            if (picks.Count > 0)
+            {
+                HideAll();
+                _startPickScreen.Show(picks, 3);
+            }
+            else
+            {
+                // Fallback: use default team
+                _runState.Team.AddRange(_contentGenerator.GeneratePlayerTeam());
+                _runState.ReindexPositions();
+                _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
+                ShowMap();
+            }
+        }
+
+        private void OnStartingPicksDone(List<UnitData> selectedUnits)
+        {
+            _runState.Team.Clear();
+            for (int i = 0; i < selectedUnits.Count; i++)
+            {
+                var unit = new UnitInstance(selectedUnits[i]);
+                unit.Position = i;
+                unit.IsActive = true;
+                _runState.Team.Add(unit);
+            }
+            _runState.ReindexPositions();
+            _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
             ShowMap();
         }
 
-        private void ShowMap()
+        private void HideAll()
         {
             _battleScreen.Hide();
             _rewardScreen.Hide();
             _restScreen.Hide();
+            _shopScreen.Hide();
+            _manageTeamScreen.Hide();
+            _mapScreen.Hide();
+            _startPickScreen.Hide();
+            _instructionScreen.Hide();
+        }
+
+        private void ShowMap()
+        {
+            HideAll();
             _mapScreen.Show(_runState);
         }
 
@@ -98,9 +152,17 @@ namespace AutobattlerSample.Core
                 return;
             }
 
-            // Battle, Elite, or Boss — show battle screen and start combat
-            var (allies, enemies) = _battleScreen.ShowBattle(node, _runState.Team, node.Encounter);
-            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd);
+            if (node.Type == MapNodeType.Shop)
+            {
+                var (units, items) = _contentGenerator.GenerateShopOfferings(4);
+                _shopScreen.Show(_runState, units, items);
+                return;
+            }
+
+            // Battle, Elite, or Boss
+            var activeTeam = _runState.GetActiveTeam();
+            var (allies, enemies) = _battleScreen.ShowBattle(node, activeTeam, node.Encounter);
+            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd, _battleScreen.OnNewRound);
         }
 
         private void OnBattleEnd(BattleResult result)
@@ -111,7 +173,6 @@ namespace AutobattlerSample.Core
 
         private void OnBattleContinue(bool playerWon)
         {
-            // If game is already over or won, restart
             if (_runState.IsGameOver || _runState.IsVictory)
             {
                 StartRun();
@@ -120,8 +181,8 @@ namespace AutobattlerSample.Core
 
             if (playerWon)
             {
-                // Remove dead units from team
-                _runState.Team.RemoveAll(u => !u.IsAlive);
+                // Dead critters are revived by BattleCombatManager (FullHeal on all allies)
+                // No need to remove dead units anymore
 
                 bool clearedBoss = _runState.Map.CurrentNode != null &&
                                    _runState.Map.CurrentNode.Type == MapNodeType.Boss;
@@ -132,38 +193,62 @@ namespace AutobattlerSample.Core
                     return;
                 }
 
-                // Show reward screen with item choices
                 var rewards = _contentGenerator.GenerateItemRewards(3);
                 _rewardScreen.Show(rewards, _runState.Team);
                 _battleScreen.Hide();
             }
             else
             {
-                // Loss: inject surviving enemies into future encounters
                 if (_lastBattleResult != null && _lastBattleResult.SurvivingEnemies.Count > 0)
-                {
                     _runState.Map.InjectSurvivingEnemies(_lastBattleResult.SurvivingEnemies);
+
+                // Dead critters are revived by BattleCombatManager
+                // Check if all were dead at end of battle (game over condition)
+                bool anyAlive = false;
+                foreach (var u in _runState.Team)
+                {
+                    if (u.IsAlive) { anyAlive = true; break; }
                 }
 
-                // Remove dead units from team
-                _runState.Team.RemoveAll(u => !u.IsAlive);
-
-                if (_runState.Team.Count == 0)
+                if (!anyAlive)
                 {
-                    // Total party wipe — game over
                     _runState.IsGameOver = true;
                     _battleScreen.SetFooter("Game Over! Your entire team has fallen. Press Continue to restart.");
                     return;
                 }
 
-                // Still have units alive — continue with harder map
                 ShowMap();
             }
         }
 
         private void OnRestContinue()
         {
-            _runState.RestoreHP(0.35f);
+            // Rest heals all allies to full HP
+            foreach (var unit in _runState.Team)
+            {
+                unit.FullHeal();
+            }
+            foreach (var unit in _runState.CampRoster)
+            {
+                unit.FullHeal();
+            }
+            ShowMap();
+        }
+
+        private void OnShopComplete()
+        {
+            ShowMap();
+        }
+
+        private void OnManageTeam()
+        {
+            _mapScreen.Hide();
+            _manageTeamScreen.Show(_runState);
+        }
+
+        private void OnManageTeamDone()
+        {
+            _manageTeamScreen.Hide();
             ShowMap();
         }
 
@@ -172,7 +257,7 @@ namespace AutobattlerSample.Core
             if (item != null)
             {
                 _runState.CollectedItems.Add(item);
-                Debug.Log($"Applied {item.Name} (+{item.Amount} {item.StatName}) to {unit.DisplayName}");
+                Debug.Log($"Applied {item.Name} to {unit?.DisplayName}");
             }
 
             ShowMap();
@@ -181,10 +266,7 @@ namespace AutobattlerSample.Core
         private ContentDatabase ResolveContentDatabase()
         {
             if (contentDatabase != null)
-            {
                 return contentDatabase;
-            }
-
             return Resources.Load<ContentDatabase>("Content/DefaultContentDatabase");
         }
     }

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a78ace26f6d45ed4b88d8211083afa6d, type: 3}
+  m_Name: Dove
+  m_EditorClassIdentifier: 
+  UnitId: dove
+  DisplayName: Dove
+  Type: 1
+  Size: 0
+  MaxHP: 15
+  Attributes:
+  - flying
+  BaseAttackDamage: 1
+  AttackCooldown: 5
+  DefaultActions:
+  - DisplayName: Dove Peck
+    Type: 0
+    Amount: 1
+    Cooldown: 5
+  - DisplayName: Soothing Coo
+    Type: 4
+    Amount: 5
+    Cooldown: 3
+  Passive: 0
+  RankUpBonusHP: 8
+  DamageScalePerRank: 1

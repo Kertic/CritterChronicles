@@ -13,5 +13,8 @@ MonoBehaviour:
   m_Name: IronShield
   m_EditorClassIdentifier: 
   Name: Iron Shield
-  Stat: 1
-  Amount: 2
+  Type: 2
+  Amount: 10
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

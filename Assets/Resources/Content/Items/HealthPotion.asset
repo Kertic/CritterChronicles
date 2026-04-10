@@ -13,5 +13,8 @@ MonoBehaviour:
   m_Name: HealthPotion
   m_EditorClassIdentifier: 
   Name: Health Potion
-  Stat: 0
+  Type: 0
   Amount: 8
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

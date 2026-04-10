@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: goblin_shaman
   DisplayName: Goblin Shaman
-  MaxHP: 12
-  Armor: 1
-  AttackDamage: 4
+  Type: 3
+  Size: 1
+  MaxHP: 18
+  Attributes: []
+  BaseAttackDamage: 4
+  AttackCooldown: 4
+  DefaultActions: []
+  Passive: 0
+  RankUpBonusHP: 6
+  DamageScalePerRank: 1

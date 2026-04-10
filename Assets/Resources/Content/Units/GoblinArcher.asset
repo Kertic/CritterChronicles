@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: goblin_archer
   DisplayName: Goblin Archer
-  MaxHP: 8
-  Armor: 0
-  AttackDamage: 5
+  Type: 3
+  Size: 0
+  MaxHP: 10
+  Attributes: []
+  BaseAttackDamage: 5
+  AttackCooldown: 3
+  DefaultActions: []
+  Passive: 0
+  RankUpBonusHP: 4
+  DamageScalePerRank: 1

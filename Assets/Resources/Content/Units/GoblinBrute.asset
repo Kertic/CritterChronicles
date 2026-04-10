@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: goblin_brute
   DisplayName: Goblin Brute
-  MaxHP: 18
-  Armor: 2
-  AttackDamage: 5
+  Type: 3
+  Size: 2
+  MaxHP: 25
+  Attributes: []
+  BaseAttackDamage: 6
+  AttackCooldown: 4
+  DefaultActions: []
+  Passive: 0
+  RankUpBonusHP: 8
+  DamageScalePerRank: 1

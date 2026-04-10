@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutobattlerSample.Data;
 using UnityEngine;
 using UnityEngine.UI;
@@ -46,11 +47,27 @@ namespace AutobattlerSample.UI
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                string statColor = item.Stat == StatType.HP ? "#66ff66" :
-                                   item.Stat == StatType.Armor ? "#6699ff" : "#ff6666";
+                string statColor;
+                string label;
 
-                var button = UIFactory.CreateButton($"Item_{i}", _content,
-                    $"{item.Name}\n<color={statColor}>+{item.Amount} {item.StatName}</color>");
+                if (item.Type == ItemType.ActionGrant)
+                {
+                    statColor = "#ff9966";
+                    label = $"{item.Name}\n<color={statColor}>{item.GrantedActionType}: {item.GrantedActionAmount} (CD:{item.GrantedActionCooldown})</color>";
+                }
+                else if (item.Type == ItemType.Shield)
+                {
+                    statColor = "#6699ff";
+                    label = $"{item.Name}\n<color={statColor}>Shield Action: {item.Amount} (CD:4)</color>";
+                }
+                else
+                {
+                    statColor = item.Type == ItemType.MaxHP ? "#66ff66" : "#cc88ff";
+                    string sign = item.Type == ItemType.CooldownReduction ? "-" : "+";
+                    label = $"{item.Name}\n<color={statColor}>{sign}{item.Amount} {item.TypeName}</color>";
+                }
+
+                var button = UIFactory.CreateButton($"Item_{i}", _content, label);
                 var rt = button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.1f + i * 0.28f, 0.4f);
                 rt.anchorMax = new Vector2(0.3f + i * 0.28f, 0.7f);
@@ -58,21 +75,15 @@ namespace AutobattlerSample.UI
                 rt.offsetMax = Vector2.zero;
 
                 var labelText = button.GetComponentInChildren<Text>();
-                if (labelText != null) labelText.fontSize = 24;
+                if (labelText != null) labelText.fontSize = 22;
 
-                // Color based on stat type
                 var img = button.GetComponent<Image>();
-                switch (item.Stat)
+                switch (item.Type)
                 {
-                    case StatType.HP:
-                        img.color = new Color(0.15f, 0.3f, 0.15f);
-                        break;
-                    case StatType.Armor:
-                        img.color = new Color(0.15f, 0.2f, 0.35f);
-                        break;
-                    case StatType.AttackDamage:
-                        img.color = new Color(0.35f, 0.15f, 0.15f);
-                        break;
+                    case ItemType.MaxHP: img.color = new Color(0.15f, 0.3f, 0.15f); break;
+                    case ItemType.Shield: img.color = new Color(0.15f, 0.2f, 0.35f); break;
+                    case ItemType.CooldownReduction: img.color = new Color(0.3f, 0.2f, 0.35f); break;
+                    case ItemType.ActionGrant: img.color = new Color(0.3f, 0.25f, 0.15f); break;
                 }
 
                 var capturedItem = item;
@@ -83,7 +94,6 @@ namespace AutobattlerSample.UI
                 });
             }
 
-            // Skip button
             var skip = UIFactory.CreateButton("Skip", _content, "Skip Reward");
             SetRect(skip.GetComponent<RectTransform>(), new Vector2(0.38f, 0.2f), new Vector2(0.62f, 0.3f));
             skip.onClick.AddListener(() => _onComplete?.Invoke(null, null));
@@ -93,29 +103,32 @@ namespace AutobattlerSample.UI
         {
             Clear();
 
+            string itemDesc = _selectedItem.Type == ItemType.ActionGrant
+                ? $"{_selectedItem.GrantedActionType}: {_selectedItem.GrantedActionAmount}"
+                : $"{_selectedItem.TypeName}: {_selectedItem.Amount}";
             var title = UIFactory.CreateText("Title", _content,
-                $"Give \"{_selectedItem.Name}\" (+{_selectedItem.Amount} {_selectedItem.StatName}) to which unit?", 30);
+                $"Give \"{_selectedItem.Name}\" ({itemDesc}) to which unit?", 28);
             title.color = new Color(1f, 0.85f, 0.3f);
             SetRect(title.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 0.95f));
 
-            int livingCount = 0;
-            foreach (var u in _team) { if (u.IsAlive) livingCount++; }
-
+            var living = _team.Where(u => u.IsAlive).ToList();
             int idx = 0;
-            foreach (var unit in _team)
+            foreach (var unit in living)
             {
-                if (!unit.IsAlive) continue;
+                float xMin = 0.1f + idx * (0.8f / living.Count);
+                float xMax = xMin + (0.75f / living.Count);
 
-                float xMin = 0.1f + idx * (0.8f / livingCount);
-                float xMax = xMin + (0.75f / livingCount);
+                string rankStr = unit.Rank > 1 ? $" R{unit.Rank}" : "";
+                string actionsStr = "";
+                foreach (var a in unit.Actions.OrderBy(a => a.Priority))
+                    actionsStr += $"\n  {a.Data.ShortLabel}(CD:{a.MaxCooldown})";
+                string info = $"{unit.DisplayName}{rankStr}\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}{actionsStr}";
 
-                string info = $"{unit.DisplayName}\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}\n" +
-                              $"ARM:{unit.EffectiveArmor}  ATK:{unit.EffectiveAttack}";
                 var button = UIFactory.CreateButton($"Unit_{idx}", _content, info);
-                SetRect(button.GetComponent<RectTransform>(), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.7f));
+                SetRect(button.GetComponent<RectTransform>(), new Vector2(xMin, 0.3f), new Vector2(xMax, 0.72f));
 
                 var labelText = button.GetComponentInChildren<Text>();
-                if (labelText != null) labelText.fontSize = 20;
+                if (labelText != null) labelText.fontSize = 16;
 
                 var capturedUnit = unit;
                 button.onClick.AddListener(() =>
@@ -126,10 +139,9 @@ namespace AutobattlerSample.UI
                 idx++;
             }
 
-            var desc = UIFactory.CreateText("Desc", _content,
-                "Click a unit to apply the item", 22);
+            var desc = UIFactory.CreateText("Desc", _content, "Click a unit to apply the item", 22);
             desc.color = new Color(0.7f, 0.7f, 0.8f);
-            SetRect(desc.rectTransform, new Vector2(0.2f, 0.25f), new Vector2(0.8f, 0.33f));
+            SetRect(desc.rectTransform, new Vector2(0.2f, 0.22f), new Vector2(0.8f, 0.28f));
         }
 
         public void Hide() => _root.SetActive(false);

@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: wolf
   DisplayName: Wolf
+  Type: 0
+  Size: 1
   MaxHP: 18
-  Armor: 0
-  AttackDamage: 8
+  Attributes: []
+  BaseAttackDamage: 7
+  AttackCooldown: 3
+  DefaultActions: []
+  Passive: 0
+  RankUpBonusHP: 6
+  DamageScalePerRank: 1

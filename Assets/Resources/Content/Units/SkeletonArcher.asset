@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: skeleton_archer
   DisplayName: Skeleton Archer
-  MaxHP: 10
-  Armor: 0
-  AttackDamage: 6
+  Type: 3
+  Size: 0
+  MaxHP: 12
+  Attributes: []
+  BaseAttackDamage: 6
+  AttackCooldown: 3
+  DefaultActions: []
+  Passive: 0
+  RankUpBonusHP: 4
+  DamageScalePerRank: 1
