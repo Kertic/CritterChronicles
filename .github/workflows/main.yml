@@ -1,5 +1,5 @@
-# .github/workflows/build-and-upload-itch.yml
-name: Build and Upload to itch.io
+# .github/workflows/webgl-to-itch.yml
+name: Build WebGL and Upload to itch.io
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build-webgl:
     runs-on: ubuntu-latest
 
     env:
@@ -16,11 +16,9 @@ jobs:
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
-      ITCH_USER: your_itch_username
-      ITCH_GAME: your-game-slug
-      ITCH_CHANNEL: windows
-      BUILD_NAME: MyGame
-      BUILD_PATH: build/windows
+      ITCH_USER: kertic
+      ITCH_GAME: critterchronicles
+      ITCH_CHANNEL: html5
 
     steps:
       - name: Checkout
@@ -30,20 +28,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: Library
-          key: Library-${{ runner.os }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
-            Library-${{ runner.os }}-
+            Library-WebGL-
 
-      - name: Build Unity project
+      - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4
         with:
-          targetPlatform: StandaloneWindows64
-          buildName: ${{ env.BUILD_NAME }}
-
-      - name: Prepare build folder
-        run: |
-          mkdir -p $BUILD_PATH
-          cp -r build/StandaloneWindows64/* $BUILD_PATH/
+          targetPlatform: WebGL
 
       - name: Download butler
         run: |
@@ -51,6 +43,6 @@ jobs:
           unzip butler.zip -d butler
           chmod +x butler/butler
 
-      - name: Upload to itch.io
+      - name: Upload WebGL build to itch.io
         run: |
-          ./butler/butler push "$BUILD_PATH" "$ITCH_USER/$ITCH_GAME:$ITCH_CHANNEL"
+          ./butler/butler push "build/WebGL/WebGL" "$ITCH_USER/$ITCH_GAME:$ITCH_CHANNEL"
