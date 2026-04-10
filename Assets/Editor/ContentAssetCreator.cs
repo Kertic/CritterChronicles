@@ -56,8 +56,8 @@ namespace AutobattlerSample.Editor
                     })
             };
 
-            // --- Starting Units (narrow pool for starting picks) ---
-            database.StartingUnits = new List<UnitData>(database.PlayerUnits);
+            // Starting picks are derived directly from PlayerUnits.
+            database.StartingUnits = new List<UnitData>();
 
             // --- Enemy Units (expanded roster) ---
             database.EnemyUnits = new List<UnitData>

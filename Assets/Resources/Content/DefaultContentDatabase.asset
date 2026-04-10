@@ -15,7 +15,7 @@ MonoBehaviour:
   PlayerUnits:
   - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}
   - {fileID: 11400000, guid: 90b029ea21927a3499323bb57beedd00, type: 2}
-  - {fileID: 11400000, guid: 78b4327f9c19ed34b9c7e90fed907372, type: 2}
+  - {fileID: 11400000, guid: 672df5981e5763742b698602c42efcc6, type: 2}
   - {fileID: 11400000, guid: 4f230768798f26b41b99c089439d7b52, type: 2}
   StartingUnits:
   - {fileID: 11400000, guid: f025c77a141318a4bb3bb7f6407a67fb, type: 2}

@@ -29,19 +29,16 @@ namespace AutobattlerSample.Core
 
         /// <summary>
         /// Generate a set of random critters for the player to pick from at start.
-        /// Uses the narrow StartingUnits pool (falls back to PlayerUnits).
+        /// Starting picks are derived directly from the PlayerUnits list.
         /// </summary>
         public List<UnitData> GenerateStartingPicks(int count = 5)
         {
             var picks = new List<UnitData>();
-            if (_database == null) return picks;
+            if (_database == null || _database.PlayerUnits == null || _database.PlayerUnits.Count == 0)
+                return picks;
 
-            // Use the narrow starting pool only
             var pool = new List<UnitData>();
-            if (_database.StartingUnits != null && _database.StartingUnits.Count > 0)
-                pool.AddRange(_database.StartingUnits);
-            else if (_database.PlayerUnits != null)
-                pool.AddRange(_database.PlayerUnits);
+            pool.AddRange(_database.PlayerUnits);
 
             var used = new HashSet<int>();
             for (int i = 0; i < count && used.Count < pool.Count; i++)
