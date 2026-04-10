@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AutobattlerSample.Battle;
 using AutobattlerSample.Data;
 using AutobattlerSample.Map;
@@ -10,8 +11,8 @@ namespace AutobattlerSample.Core
     public class GameBootstrap : MonoBehaviour
     {
         [Header("Map Settings")]
-        public int Floors = 6;
-        public int Width = 3;
+        public int Floors = 10;
+        public int Width = 4;
         public int Seed = 0;
 
         [Header("Content")]
@@ -24,6 +25,7 @@ namespace AutobattlerSample.Core
         private RestScreen _restScreen;
         private ShopScreen _shopScreen;
         private ManageTeamScreen _manageTeamScreen;
+        private StartPickScreen _startPickScreen;
         private BattleCombatManager _combatManager;
         private BattleResult _lastBattleResult;
         private ContentGenerator _contentGenerator;
@@ -62,6 +64,7 @@ namespace AutobattlerSample.Core
             _restScreen = RestScreen.Create(transform, OnRestContinue);
             _shopScreen = ShopScreen.Create(transform, OnShopComplete);
             _manageTeamScreen = ManageTeamScreen.Create(transform, OnManageTeamDone);
+            _startPickScreen = StartPickScreen.Create(transform, OnStartingPicksDone);
 
             var cmGo = new GameObject("CombatManager");
             cmGo.transform.SetParent(transform);
@@ -72,19 +75,54 @@ namespace AutobattlerSample.Core
         {
             _runState = new RunState();
             _runState.Team.Clear();
-            _runState.Team.AddRange(_contentGenerator.GeneratePlayerTeam());
-            _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
+            _runState.CampRoster.Clear();
 
+            // Show starting pick screen
+            var picks = _contentGenerator.GenerateStartingPicks(6);
+            if (picks.Count > 0)
+            {
+                HideAll();
+                _startPickScreen.Show(picks, 3);
+            }
+            else
+            {
+                // Fallback: use default team
+                _runState.Team.AddRange(_contentGenerator.GeneratePlayerTeam());
+                _runState.ReindexPositions();
+                _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
+                ShowMap();
+            }
+        }
+
+        private void OnStartingPicksDone(List<UnitData> selectedUnits)
+        {
+            _runState.Team.Clear();
+            for (int i = 0; i < selectedUnits.Count; i++)
+            {
+                var unit = new UnitInstance(selectedUnits[i]);
+                unit.Position = i;
+                unit.IsActive = true;
+                _runState.Team.Add(unit);
+            }
+            _runState.ReindexPositions();
+            _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
             ShowMap();
         }
 
-        private void ShowMap()
+        private void HideAll()
         {
             _battleScreen.Hide();
             _rewardScreen.Hide();
             _restScreen.Hide();
             _shopScreen.Hide();
             _manageTeamScreen.Hide();
+            _mapScreen.Hide();
+            _startPickScreen.Hide();
+        }
+
+        private void ShowMap()
+        {
+            HideAll();
             _mapScreen.Show(_runState);
         }
 
@@ -111,8 +149,9 @@ namespace AutobattlerSample.Core
             }
 
             // Battle, Elite, or Boss
-            var (allies, enemies) = _battleScreen.ShowBattle(node, _runState.Team, node.Encounter);
-            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd);
+            var activeTeam = _runState.GetActiveTeam();
+            var (allies, enemies) = _battleScreen.ShowBattle(node, activeTeam, node.Encounter);
+            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd, _battleScreen.OnNewRound);
         }
 
         private void OnBattleEnd(BattleResult result)
@@ -131,7 +170,8 @@ namespace AutobattlerSample.Core
 
             if (playerWon)
             {
-                _runState.Team.RemoveAll(u => !u.IsAlive);
+                // Dead critters are revived by BattleCombatManager (FullHeal on all allies)
+                // No need to remove dead units anymore
 
                 bool clearedBoss = _runState.Map.CurrentNode != null &&
                                    _runState.Map.CurrentNode.Type == MapNodeType.Boss;
@@ -151,9 +191,15 @@ namespace AutobattlerSample.Core
                 if (_lastBattleResult != null && _lastBattleResult.SurvivingEnemies.Count > 0)
                     _runState.Map.InjectSurvivingEnemies(_lastBattleResult.SurvivingEnemies);
 
-                _runState.Team.RemoveAll(u => !u.IsAlive);
+                // Dead critters are revived by BattleCombatManager
+                // Check if all were dead at end of battle (game over condition)
+                bool anyAlive = false;
+                foreach (var u in _runState.Team)
+                {
+                    if (u.IsAlive) { anyAlive = true; break; }
+                }
 
-                if (_runState.Team.Count == 0)
+                if (!anyAlive)
                 {
                     _runState.IsGameOver = true;
                     _battleScreen.SetFooter("Game Over! Your entire team has fallen. Press Continue to restart.");
@@ -166,11 +212,14 @@ namespace AutobattlerSample.Core
 
         private void OnRestContinue()
         {
-            // Rest grants +10 Shield to all living allies
+            // Rest heals all allies to full HP
             foreach (var unit in _runState.Team)
             {
-                if (unit.IsAlive)
-                    unit.Shield += 10;
+                unit.FullHeal();
+            }
+            foreach (var unit in _runState.CampRoster)
+            {
+                unit.FullHeal();
             }
             ShowMap();
         }
@@ -197,7 +246,7 @@ namespace AutobattlerSample.Core
             if (item != null)
             {
                 _runState.CollectedItems.Add(item);
-                Debug.Log($"Applied {item.Name} ({(item.Type == ItemType.CooldownReduction ? "-" : "+")}{item.Amount} {item.TypeName}) to {unit.DisplayName}");
+                Debug.Log($"Applied {item.Name} to {unit?.DisplayName}");
             }
 
             ShowMap();
@@ -211,3 +260,4 @@ namespace AutobattlerSample.Core
         }
     }
 }
+

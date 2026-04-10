@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Magic Barrier
   Type: 2
   Amount: 20
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

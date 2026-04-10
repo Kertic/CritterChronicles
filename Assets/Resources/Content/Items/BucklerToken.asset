@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Buckler Token
   Type: 2
   Amount: 5
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

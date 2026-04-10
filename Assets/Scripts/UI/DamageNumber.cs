@@ -54,6 +54,30 @@ namespace AutobattlerSample.UI
             dn.StartCoroutine(dn.FloatAndFade(rt, text));
         }
 
+        public static void SpawnShield(Transform parent, Vector2 position, int amount)
+        {
+            var go = new GameObject("ShieldNum", typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = position + new Vector2(-30f, 0f);
+            rt.sizeDelta = new Vector2(120f, 40f);
+
+            var text = go.GetComponent<Text>();
+            text.text = $"+{amount} SH";
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 26;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = new Color(0.4f, 0.6f, 1f);
+            text.raycastTarget = false;
+
+            var dn = go.AddComponent<DamageNumber>();
+            dn.StartCoroutine(dn.FloatAndFade(rt, text));
+        }
+
         private IEnumerator FloatAndFade(RectTransform rt, Text text)
         {
             Vector2 startPos = rt.anchoredPosition;

@@ -4,7 +4,7 @@
     {
         MaxHP,
         CooldownReduction,
-        Shield
+        Shield,
+        ActionGrant
     }
 }
-

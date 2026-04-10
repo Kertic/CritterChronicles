@@ -21,6 +21,7 @@ MonoBehaviour:
   - flying
   BaseAttackDamage: 8
   AttackCooldown: 4
+  DefaultActions: []
   Passive: 0
   RankUpBonusHP: 8
   DamageScalePerRank: 1.5

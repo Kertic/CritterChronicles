@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Health Potion
   Type: 0
   Amount: 8
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

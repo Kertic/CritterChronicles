@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Haste Ring
   Type: 1
   Amount: 1
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

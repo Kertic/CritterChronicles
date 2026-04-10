@@ -34,18 +34,19 @@ namespace AutobattlerSample.UI
             SetRect(title.rectTransform, new Vector2(0f, 0.8f), new Vector2(1f, 0.92f));
 
             var desc = UIFactory.CreateText("Desc", _content,
-                "Your team rests by the fire.\nAll allies gain +10 Shield.", 26);
+                "Your team rests by the fire.\nAll allies heal to full HP.", 26);
             SetRect(desc.rectTransform, new Vector2(0.1f, 0.6f), new Vector2(0.9f, 0.78f));
 
             string info = "";
             foreach (var unit in state.Team)
             {
-                if (!unit.IsAlive) continue;
-                int newShield = unit.Shield + 10;
-                info += $"{unit.DisplayName}: Shield {unit.Shield} → {newShield}\n";
+                string healInfo = unit.CurrentHP < unit.EffectiveMaxHP
+                    ? $"HP {unit.CurrentHP} → {unit.EffectiveMaxHP}"
+                    : "Full HP";
+                info += $"{unit.DisplayName}: {healInfo}\n";
             }
 
-            var infoText = UIFactory.CreateText("ShieldInfo", _content, info, 24);
+            var infoText = UIFactory.CreateText("HealInfo", _content, info, 24);
             SetRect(infoText.rectTransform, new Vector2(0.2f, 0.3f), new Vector2(0.8f, 0.58f));
 
             var button = UIFactory.CreateButton("Rest", _content, "Rest & Continue");

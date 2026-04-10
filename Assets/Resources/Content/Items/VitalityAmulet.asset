@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Vitality Amulet
   Type: 0
   Amount: 15
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

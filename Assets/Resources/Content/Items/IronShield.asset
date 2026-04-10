@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Iron Shield
   Type: 2
   Amount: 10
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

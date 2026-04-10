@@ -15,3 +15,6 @@ MonoBehaviour:
   Name: Life Gem
   Type: 0
   Amount: 12
+  GrantedActionType: 0
+  GrantedActionAmount: 0
+  GrantedActionCooldown: 3

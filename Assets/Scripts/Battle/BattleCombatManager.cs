@@ -13,19 +13,24 @@ namespace AutobattlerSample.Battle
         private List<BattleUnit> _enemies;
         private Action<TurnAction> _onTurnAction;
         private Action<BattleResult> _onBattleEnd;
+        private Action<int> _onNewRound;
         private Coroutine _battleCoroutine;
 
         public void StartBattle(List<BattleUnit> allies, List<BattleUnit> enemies,
-            Action<TurnAction> onTurnAction, Action<BattleResult> onBattleEnd)
+            Action<TurnAction> onTurnAction, Action<BattleResult> onBattleEnd,
+            Action<int> onNewRound = null)
         {
             _allies = allies;
             _enemies = enemies;
             _onTurnAction = onTurnAction;
             _onBattleEnd = onBattleEnd;
+            _onNewRound = onNewRound;
 
-            // Reset all cooldowns at the start of each battle
-            foreach (var u in _allies) u.CurrentCooldown = 0;
-            foreach (var u in _enemies) u.CurrentCooldown = 0;
+            // Reset all cooldowns
+            foreach (var u in _allies)
+                foreach (var a in u.Actions) a.CurrentCooldown = 0;
+            foreach (var u in _enemies)
+                foreach (var a in u.Actions) a.CurrentCooldown = 0;
 
             if (_battleCoroutine != null)
                 StopCoroutine(_battleCoroutine);
@@ -43,30 +48,37 @@ namespace AutobattlerSample.Battle
             while (round < maxRounds && _allies.Any(u => u.IsAlive) && _enemies.Any(u => u.IsAlive))
             {
                 round++;
+                result.TotalTurns = round;
+                _onNewRound?.Invoke(round);
 
-                // Start of turn: tick all cooldowns down by 1
-                foreach (var u in _allies.Where(u => u.IsAlive)) u.TickCooldown();
-                foreach (var u in _enemies.Where(u => u.IsAlive)) u.TickCooldown();
+                // Tick all cooldowns
+                foreach (var u in _allies.Where(u => u.IsAlive)) u.TickAllCooldowns();
+                foreach (var u in _enemies.Where(u => u.IsAlive)) u.TickAllCooldowns();
 
-                // Build turn order: allies in team order, then enemies in list order
+                // Build turn order: shuffle all living units randomly
                 var turnOrder = new List<BattleUnit>();
                 turnOrder.AddRange(_allies.Where(u => u.IsAlive));
                 turnOrder.AddRange(_enemies.Where(u => u.IsAlive));
+                ShuffleList(turnOrder);
 
                 foreach (var unit in turnOrder)
                 {
                     if (!unit.IsAlive) continue;
                     if (!_allies.Any(u => u.IsAlive) || !_enemies.Any(u => u.IsAlive)) break;
 
-                    if (!unit.IsReady)
+                    var readyAction = unit.GetNextReadyAction();
+
+                    if (readyAction == null)
                     {
-                        // Unit is on cooldown — skip turn
+                        // All actions on cooldown
+                        int minCd = unit.Actions.Count > 0 ? unit.Actions.Min(a => a.CurrentCooldown) : 0;
                         var skipAction = new TurnAction
                         {
                             Attacker = unit,
                             WasOnCooldown = true,
-                            AttackerCooldownAfter = unit.CurrentCooldown,
-                            AttackerRank = unit.Rank
+                            AttackerCooldownAfter = minCd,
+                            AttackerRank = unit.Rank,
+                            TurnNumber = round
                         };
                         result.TurnLog.Add(skipAction);
                         _onTurnAction?.Invoke(skipAction);
@@ -74,62 +86,41 @@ namespace AutobattlerSample.Battle
                         continue;
                     }
 
-                    // Pick a random living target from the opposing team
-                    var targets = unit.IsAlly
-                        ? _enemies.Where(u => u.IsAlive).ToList()
-                        : _allies.Where(u => u.IsAlive).ToList();
+                    TurnAction action = null;
 
-                    if (targets.Count == 0) break;
-
-                    var target = targets[UnityEngine.Random.Range(0, targets.Count)];
-                    int hpBefore = target.CurrentHP;
-                    int shieldBefore = target.Shield;
-                    int rawDamage = unit.AttackDamage;
-                    var (_, shieldAbsorbed) = target.TakeDamage(rawDamage);
-
-                    // Start cooldown after attacking
-                    unit.StartCooldown();
-
-                    // Handle Lifesteal passive
-                    int lifestealHealed = 0;
-                    if (unit.Passive == PassiveType.Lifesteal)
+                    switch (readyAction.Type)
                     {
-                        int hpDamage = rawDamage - shieldAbsorbed;
-                        if (hpDamage > 0)
-                            lifestealHealed = unit.Heal(hpDamage);
+                        case ActionType.Attack:
+                            action = ExecuteAttack(unit, readyAction, round);
+                            break;
+                        case ActionType.ShieldSelf:
+                            action = ExecuteShieldSelf(unit, readyAction, round);
+                            break;
+                        case ActionType.HealSelf:
+                            action = ExecuteHealSelf(unit, readyAction, round);
+                            break;
+                        case ActionType.HealFront:
+                            action = ExecuteHealFront(unit, readyAction, round);
+                            break;
+                        case ActionType.HealAll:
+                            action = ExecuteHealAll(unit, readyAction, round);
+                            break;
                     }
 
-                    var action = new TurnAction
+                    if (action != null)
                     {
-                        Attacker = unit,
-                        Target = target,
-                        RawDamage = rawDamage,
-                        DamageDealt = rawDamage,
-                        ShieldAbsorbed = shieldAbsorbed,
-                        TargetHPBefore = hpBefore,
-                        TargetHPAfter = target.CurrentHP,
-                        TargetShieldBefore = shieldBefore,
-                        TargetShieldAfter = target.Shield,
-                        KilledTarget = !target.IsAlive,
-                        WasOnCooldown = false,
-                        AttackerCooldownAfter = unit.CurrentCooldown,
-                        AttackerRank = unit.Rank,
-                        LifestealHealed = lifestealHealed
-                    };
-
-                    result.TurnLog.Add(action);
-                    _onTurnAction?.Invoke(action);
-
-                    yield return new WaitForSeconds(0.7f);
+                        result.TurnLog.Add(action);
+                        _onTurnAction?.Invoke(action);
+                        yield return new WaitForSeconds(0.7f);
+                    }
                 }
             }
 
-            // Write back HP/Shield to instances and full-heal surviving allies
+            // Write back HP/Shield and revive dead allies at full HP
             foreach (var ally in _allies)
             {
                 ally.WriteBackHP();
-                if (ally.IsAlive)
-                    ally.Instance.FullHeal();
+                ally.Instance.FullHeal(); // Revive dead + full heal living
             }
             foreach (var enemy in _enemies)
                 enemy.WriteBackHP();
@@ -144,6 +135,191 @@ namespace AutobattlerSample.Battle
 
             yield return new WaitForSeconds(0.3f);
             _onBattleEnd?.Invoke(result);
+        }
+
+        private TurnAction ExecuteAttack(BattleUnit unit, ActionInstance readyAction, int round)
+        {
+            // Target closest enemy (lowest Position)
+            var targets = unit.IsAlly
+                ? _enemies.Where(u => u.IsAlive).OrderBy(u => u.Position).ToList()
+                : _allies.Where(u => u.IsAlive).OrderBy(u => u.Position).ToList();
+
+            if (targets.Count == 0) return null;
+
+            // Pick the closest (lowest position), break ties randomly
+            int minPos = targets[0].Position;
+            var closest = targets.Where(u => u.Position == minPos).ToList();
+            var target = closest[UnityEngine.Random.Range(0, closest.Count)];
+
+            int hpBefore = target.CurrentHP;
+            int shieldBefore = target.Shield;
+            int rawDamage = readyAction.Amount;
+            var (_, shieldAbsorbed) = target.TakeDamage(rawDamage);
+
+            readyAction.StartCooldown();
+
+            // Lifesteal
+            int lifestealHealed = 0;
+            if (unit.Passive == PassiveType.Lifesteal)
+            {
+                int hpDamage = rawDamage - shieldAbsorbed;
+                if (hpDamage > 0)
+                {
+                    lifestealHealed = unit.Heal(hpDamage);
+                    if (lifestealHealed > 0)
+                        unit.TriggerHasteOnHeal(1);
+                }
+            }
+
+            return new TurnAction
+            {
+                Attacker = unit,
+                Target = target,
+                UsedActionType = ActionType.Attack,
+                ActionName = readyAction.DisplayName,
+                RawDamage = rawDamage,
+                DamageDealt = rawDamage,
+                ShieldAbsorbed = shieldAbsorbed,
+                TargetHPBefore = hpBefore,
+                TargetHPAfter = target.CurrentHP,
+                TargetShieldBefore = shieldBefore,
+                TargetShieldAfter = target.Shield,
+                KilledTarget = !target.IsAlive,
+                WasOnCooldown = false,
+                AttackerCooldownAfter = readyAction.CurrentCooldown,
+                AttackerRank = unit.Rank,
+                LifestealHealed = lifestealHealed,
+                TurnNumber = round
+            };
+        }
+
+        private TurnAction ExecuteShieldSelf(BattleUnit unit, ActionInstance readyAction, int round)
+        {
+            int amount = readyAction.Amount;
+            unit.AddShield(amount);
+            readyAction.StartCooldown();
+
+            return new TurnAction
+            {
+                Attacker = unit,
+                Target = unit,
+                UsedActionType = ActionType.ShieldSelf,
+                ActionName = readyAction.DisplayName,
+                ShieldGained = amount,
+                WasOnCooldown = false,
+                AttackerCooldownAfter = readyAction.CurrentCooldown,
+                AttackerRank = unit.Rank,
+                TargetShieldBefore = unit.Shield - amount,
+                TargetShieldAfter = unit.Shield,
+                TurnNumber = round
+            };
+        }
+
+        private TurnAction ExecuteHealSelf(BattleUnit unit, ActionInstance readyAction, int round)
+        {
+            int hpBefore = unit.CurrentHP;
+            int healed = unit.Heal(readyAction.Amount);
+            readyAction.StartCooldown();
+
+            if (healed > 0)
+                unit.TriggerHasteOnHeal(1);
+
+            return new TurnAction
+            {
+                Attacker = unit,
+                Target = unit,
+                HealTarget = unit,
+                UsedActionType = ActionType.HealSelf,
+                ActionName = readyAction.DisplayName,
+                HealAmount = healed,
+                WasOnCooldown = false,
+                AttackerCooldownAfter = readyAction.CurrentCooldown,
+                AttackerRank = unit.Rank,
+                TargetHPBefore = hpBefore,
+                TargetHPAfter = unit.CurrentHP,
+                TurnNumber = round
+            };
+        }
+
+        private TurnAction ExecuteHealFront(BattleUnit unit, ActionInstance readyAction, int round)
+        {
+            // Find ally with lowest position that is alive
+            var allies = unit.IsAlly ? _allies : _enemies;
+            BattleUnit target = null;
+            foreach (var a in allies.Where(u => u.IsAlive).OrderBy(u => u.Position))
+            {
+                target = a;
+                break;
+            }
+            if (target == null) target = unit; // fallback to self
+
+            int hpBefore = target.CurrentHP;
+            int healed = target.Heal(readyAction.Amount);
+            readyAction.StartCooldown();
+
+            if (healed > 0)
+                target.TriggerHasteOnHeal(1);
+
+            return new TurnAction
+            {
+                Attacker = unit,
+                Target = target,
+                HealTarget = target,
+                UsedActionType = ActionType.HealFront,
+                ActionName = readyAction.DisplayName,
+                HealAmount = healed,
+                WasOnCooldown = false,
+                AttackerCooldownAfter = readyAction.CurrentCooldown,
+                AttackerRank = unit.Rank,
+                TargetHPBefore = hpBefore,
+                TargetHPAfter = target.CurrentHP,
+                TurnNumber = round
+            };
+        }
+
+        private TurnAction ExecuteHealAll(BattleUnit unit, ActionInstance readyAction, int round)
+        {
+            var allies = unit.IsAlly ? _allies : _enemies;
+            int totalHealed = 0;
+            var results = new List<(BattleUnit unit, int healed)>();
+
+            foreach (var ally in allies)
+            {
+                if (!ally.IsAlive) continue;
+                int healed = ally.Heal(readyAction.Amount);
+                totalHealed += healed;
+                results.Add((ally, healed));
+                if (healed > 0)
+                    ally.TriggerHasteOnHeal(1);
+            }
+
+            readyAction.StartCooldown();
+
+            return new TurnAction
+            {
+                Attacker = unit,
+                Target = unit,
+                HealTarget = unit,
+                UsedActionType = ActionType.HealAll,
+                ActionName = readyAction.DisplayName,
+                HealAmount = totalHealed,
+                HealAllResults = results,
+                WasOnCooldown = false,
+                AttackerCooldownAfter = readyAction.CurrentCooldown,
+                AttackerRank = unit.Rank,
+                TargetHPBefore = 0,
+                TargetHPAfter = 0,
+                TurnNumber = round
+            };
+        }
+
+        private static void ShuffleList<T>(List<T> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ MonoBehaviour:
   Attributes: []
   BaseAttackDamage: 10
   AttackCooldown: 4
+  DefaultActions: []
   Passive: 1
   RankUpBonusHP: 15
   DamageScalePerRank: 1

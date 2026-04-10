@@ -3,7 +3,8 @@
     public enum PassiveType
     {
         None,
-        Lifesteal
+        Lifesteal,
+        HasteOnHeal
     }
 }
 

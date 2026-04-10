@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutobattlerSample.Core;
 using AutobattlerSample.Data;
 using UnityEngine;
@@ -33,7 +34,8 @@ namespace AutobattlerSample.UI
             Clear();
 
             // Title
-            var title = UIFactory.CreateText("Title", _content, "Shop — Pick One!", 38);
+            var title = UIFactory.CreateText("Title", _content,
+                $"Shop — Pick One!  (Slots: {state.UsedSlots}/{RunState.MaxSlots})", 36);
             title.fontStyle = FontStyle.Bold;
             title.color = new Color(1f, 0.85f, 0.3f);
             SetRect(title.rectTransform, new Vector2(0f, 0.88f), new Vector2(1f, 0.97f));
@@ -48,7 +50,6 @@ namespace AutobattlerSample.UI
                 float xMin = 0.1f + idx * cardWidth;
                 float xMax = xMin + cardWidth - 0.02f;
 
-                // Check if player already owns this unit
                 bool alreadyOwned = false;
                 int currentRank = 0;
                 foreach (var u in state.Team)
@@ -60,16 +61,29 @@ namespace AutobattlerSample.UI
                         break;
                     }
                 }
+                if (!alreadyOwned)
+                {
+                    foreach (var u in state.CampRoster)
+                    {
+                        if (u.BaseData != null && u.BaseData.UnitId == unitData.UnitId)
+                        {
+                            alreadyOwned = true;
+                            currentRank = u.Rank;
+                            break;
+                        }
+                    }
+                }
 
+                string sizeLabel = unitData.Size == CreatureSize.Large ? " (2 slots)" : "";
                 string actionLabel = alreadyOwned
                     ? $"UPGRADE\n{unitData.DisplayName}\nRank {currentRank} → {currentRank + 1}\n+{unitData.RankUpBonusHP} Max HP"
-                    : $"RECRUIT\n{unitData.DisplayName}\n{unitData.Type} / {unitData.Size}\nHP:{unitData.MaxHP} ATK:{unitData.BaseAttackDamage} CD:{unitData.AttackCooldown}";
+                    : $"RECRUIT\n{unitData.DisplayName}\n{unitData.Type} / {unitData.Size}{sizeLabel}\nHP:{unitData.MaxHP} ATK:{unitData.BaseAttackDamage} CD:{unitData.AttackCooldown}";
 
                 var btn = UIFactory.CreateButton($"ShopUnit_{idx}", _content, actionLabel);
                 SetRect(btn.GetComponent<RectTransform>(), new Vector2(xMin, 0.3f), new Vector2(xMax, 0.82f));
 
                 var labelText = btn.GetComponentInChildren<Text>();
-                if (labelText != null) labelText.fontSize = 20;
+                if (labelText != null) labelText.fontSize = 18;
 
                 btn.GetComponent<Image>().color = alreadyOwned
                     ? new Color(0.2f, 0.35f, 0.2f)
@@ -95,14 +109,22 @@ namespace AutobattlerSample.UI
                 float xMin = 0.1f + idx * cardWidth;
                 float xMax = xMin + cardWidth - 0.02f;
 
-                string sign = item.Type == ItemType.CooldownReduction ? "-" : "+";
-                string label = $"ITEM\n{item.Name}\n{sign}{item.Amount} {item.TypeName}";
+                string label;
+                if (item.Type == ItemType.ActionGrant)
+                    label = $"ITEM\n{item.Name}\n{item.GrantedActionType}: {item.GrantedActionAmount}\nCD:{item.GrantedActionCooldown}";
+                else if (item.Type == ItemType.Shield)
+                    label = $"ITEM\n{item.Name}\nShield Action: {item.Amount}\nCD:4";
+                else
+                {
+                    string sign = item.Type == ItemType.CooldownReduction ? "-" : "+";
+                    label = $"ITEM\n{item.Name}\n{sign}{item.Amount} {item.TypeName}";
+                }
 
                 var btn = UIFactory.CreateButton($"ShopItem_{idx}", _content, label);
                 SetRect(btn.GetComponent<RectTransform>(), new Vector2(xMin, 0.3f), new Vector2(xMax, 0.82f));
 
                 var labelText = btn.GetComponentInChildren<Text>();
-                if (labelText != null) labelText.fontSize = 20;
+                if (labelText != null) labelText.fontSize = 18;
 
                 Color bgColor;
                 switch (item.Type)
@@ -110,6 +132,7 @@ namespace AutobattlerSample.UI
                     case ItemType.MaxHP: bgColor = new Color(0.15f, 0.3f, 0.15f); break;
                     case ItemType.CooldownReduction: bgColor = new Color(0.3f, 0.2f, 0.35f); break;
                     case ItemType.Shield: bgColor = new Color(0.15f, 0.2f, 0.35f); break;
+                    case ItemType.ActionGrant: bgColor = new Color(0.3f, 0.25f, 0.15f); break;
                     default: bgColor = new Color(0.2f, 0.2f, 0.2f); break;
                 }
                 btn.GetComponent<Image>().color = bgColor;
@@ -133,30 +156,30 @@ namespace AutobattlerSample.UI
         {
             Clear();
 
-            string sign = item.Type == ItemType.CooldownReduction ? "-" : "+";
+            string desc = item.Type == ItemType.ActionGrant
+                ? $"{item.GrantedActionType}: {item.GrantedActionAmount}"
+                : $"{item.TypeName}: {item.Amount}";
             var title = UIFactory.CreateText("Title", _content,
-                $"Give \"{item.Name}\" ({sign}{item.Amount} {item.TypeName}) to which unit?", 28);
+                $"Give \"{item.Name}\" ({desc}) to which unit?", 26);
             title.color = new Color(1f, 0.85f, 0.3f);
             SetRect(title.rectTransform, new Vector2(0f, 0.85f), new Vector2(1f, 0.95f));
 
-            int livingCount = 0;
-            foreach (var u in _runState.Team) { if (u.IsAlive) livingCount++; }
-
+            var allUnits = _runState.Team.Concat(_runState.CampRoster).Where(u => u.IsAlive).ToList();
             int idx = 0;
-            foreach (var unit in _runState.Team)
+            foreach (var unit in allUnits)
             {
-                if (!unit.IsAlive) continue;
-                float xMin = 0.1f + idx * (0.8f / livingCount);
-                float xMax = xMin + (0.75f / livingCount);
+                float xMin = 0.05f + idx * (0.9f / allUnits.Count);
+                float xMax = xMin + (0.85f / allUnits.Count);
 
-                string info = $"{unit.DisplayName} (R{unit.Rank})\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}" +
-                              $"\nATK:{unit.EffectiveAttackDamage} CD:{unit.EffectiveCooldown}" +
-                              (unit.Shield > 0 ? $"\nShield:{unit.Shield}" : "");
+                string actionsStr = "";
+                foreach (var a in unit.Actions.OrderBy(a => a.Priority))
+                    actionsStr += $"\n {a.Data.ShortLabel}";
+                string info = $"{unit.DisplayName} (R{unit.Rank})\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}{actionsStr}";
 
                 var btn = UIFactory.CreateButton($"Unit_{idx}", _content, info);
                 SetRect(btn.GetComponent<RectTransform>(), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.75f));
                 var labelText = btn.GetComponentInChildren<Text>();
-                if (labelText != null) labelText.fontSize = 18;
+                if (labelText != null) labelText.fontSize = 15;
 
                 var capturedUnit = unit;
                 btn.onClick.AddListener(() =>
@@ -169,9 +192,9 @@ namespace AutobattlerSample.UI
                 idx++;
             }
 
-            var desc = UIFactory.CreateText("Desc", _content, "Click a unit to apply the item", 22);
-            desc.color = new Color(0.7f, 0.7f, 0.8f);
-            SetRect(desc.rectTransform, new Vector2(0.2f, 0.25f), new Vector2(0.8f, 0.33f));
+            var descText = UIFactory.CreateText("Desc", _content, "Click a unit to apply the item", 22);
+            descText.color = new Color(0.7f, 0.7f, 0.8f);
+            SetRect(descText.rectTransform, new Vector2(0.2f, 0.25f), new Vector2(0.8f, 0.33f));
         }
 
         public void Hide() => _root.SetActive(false);

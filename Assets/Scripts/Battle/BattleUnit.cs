@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AutobattlerSample.Data;
 
 namespace AutobattlerSample.Battle
@@ -8,16 +9,18 @@ namespace AutobattlerSample.Battle
         public bool IsAlly { get; }
         public int CurrentHP { get; set; }
         public int Shield { get; set; }
-        public int CurrentCooldown { get; set; }
+        public int Position { get; set; }
         public bool IsAlive => CurrentHP > 0;
-        public bool IsReady => CurrentCooldown <= 0;
+
+        public List<ActionInstance> Actions { get; } = new();
 
         public string DisplayName => Instance.DisplayName;
         public int MaxHP => Instance.EffectiveMaxHP;
-        public int AttackDamage => Instance.EffectiveAttackDamage;
-        public int Cooldown => Instance.EffectiveCooldown;
         public int Rank => Instance.Rank;
         public PassiveType Passive => Instance.Passive;
+
+        // Backward compat helpers
+        public int AttackDamage => Instance.EffectiveAttackDamage;
 
         public BattleUnit(UnitInstance instance, bool isAlly)
         {
@@ -25,23 +28,35 @@ namespace AutobattlerSample.Battle
             IsAlly = isAlly;
             CurrentHP = instance.CurrentHP;
             Shield = instance.Shield;
-            CurrentCooldown = 0;
+            Position = instance.Position;
+
+            // Clone actions from instance
+            foreach (var ai in instance.Actions)
+                Actions.Add(ai.Clone());
         }
 
-        public void TickCooldown()
+        public void TickAllCooldowns()
         {
-            if (CurrentCooldown > 0)
-                CurrentCooldown--;
-        }
-
-        public void StartCooldown()
-        {
-            CurrentCooldown = Cooldown;
+            foreach (var action in Actions)
+                action.TickCooldown();
         }
 
         /// <summary>
-        /// Deal damage, absorbing Shield first, then HP. Returns (totalDamage, shieldAbsorbed).
+        /// Returns the highest-priority (lowest Priority number) action that is ready.
+        /// Returns null if all actions are on cooldown.
         /// </summary>
+        public ActionInstance GetNextReadyAction()
+        {
+            ActionInstance best = null;
+            foreach (var a in Actions)
+            {
+                if (!a.IsReady) continue;
+                if (best == null || a.Priority < best.Priority)
+                    best = a;
+            }
+            return best;
+        }
+
         public (int damage, int shieldAbsorbed) TakeDamage(int rawDamage)
         {
             int remaining = rawDamage;
@@ -66,6 +81,27 @@ namespace AutobattlerSample.Battle
             CurrentHP += amount;
             if (CurrentHP > MaxHP) CurrentHP = MaxHP;
             return CurrentHP - before;
+        }
+
+        public void AddShield(int amount)
+        {
+            Shield += amount;
+        }
+
+        /// <summary>
+        /// If unit has HasteOnHeal passive, haste its first Attack action by amount.
+        /// </summary>
+        public void TriggerHasteOnHeal(int hasteAmount)
+        {
+            if (Passive != PassiveType.HasteOnHeal) return;
+            foreach (var a in Actions)
+            {
+                if (a.Type == ActionType.Attack)
+                {
+                    a.Haste(hasteAmount);
+                    break;
+                }
+            }
         }
 
         public void WriteBackHP()

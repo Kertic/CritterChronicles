@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutobattlerSample.Core;
 using AutobattlerSample.Data;
 using AutobattlerSample.Map;
@@ -36,10 +37,10 @@ namespace AutobattlerSample.UI
             int totalFloors = state.Map.Floors.Count;
 
             var nodePositions = new Dictionary<MapNode, Vector2>();
-            float yStart = -350f;
-            float yEnd = 320f;
+            float yStart = -380f;
+            float yEnd = 350f;
             float ySpacing = totalFloors > 1 ? (yEnd - yStart) / (totalFloors - 1) : 0f;
-            float xSpacing = 220f;
+            float xSpacing = 200f;
 
             for (int floor = 0; floor < totalFloors; floor++)
             {
@@ -89,11 +90,11 @@ namespace AutobattlerSample.UI
                     var rt = button.GetComponent<RectTransform>();
                     rt.anchorMin = new Vector2(0.5f, 0.5f);
                     rt.anchorMax = new Vector2(0.5f, 0.5f);
-                    rt.sizeDelta = new Vector2(200f, 70f);
+                    rt.sizeDelta = new Vector2(180f, 60f);
                     rt.anchoredPosition = pos;
 
                     var labelText = button.GetComponentInChildren<Text>();
-                    if (labelText != null) labelText.fontSize = 18;
+                    if (labelText != null) labelText.fontSize = 16;
 
                     bool selectable = state.Map.IsNodeSelectable(node);
                     var capturedNode = node;
@@ -113,24 +114,26 @@ namespace AutobattlerSample.UI
             }
 
             // Title
-            var title = UIFactory.CreateText("Title", _content, "Choose Your Path", 38);
-            title.fontStyle = FontStyle.Bold;
-            var titleRt = title.rectTransform;
+            var titleText = UIFactory.CreateText("Title", _content, "Choose Your Path", 36);
+            titleText.fontStyle = FontStyle.Bold;
+            var titleRt = titleText.rectTransform;
             titleRt.anchorMin = new Vector2(0f, 1f);
             titleRt.anchorMax = new Vector2(1f, 1f);
-            titleRt.offsetMin = new Vector2(20f, -55f);
+            titleRt.offsetMin = new Vector2(20f, -50f);
             titleRt.offsetMax = new Vector2(-20f, -10f);
 
             // Team info at bottom
-            string teamInfo = "Team: ";
+            string teamInfo = $"Team ({state.UsedSlots}/{RunState.MaxSlots} slots): ";
             foreach (var u in state.Team)
             {
-                if (!u.IsAlive) continue;
                 string rankStr = u.Rank > 1 ? $"R{u.Rank} " : "";
-                string shieldStr = u.Shield > 0 ? $" Sh:{u.Shield}" : "";
-                teamInfo += $"  {u.DisplayName} ({rankStr}HP:{u.CurrentHP}/{u.EffectiveMaxHP} ATK:{u.EffectiveAttackDamage} CD:{u.EffectiveCooldown}{shieldStr})";
+                string pos = $"P{u.Position}";
+                teamInfo += $"  {u.DisplayName}({rankStr}{pos} HP:{u.CurrentHP}/{u.EffectiveMaxHP})";
             }
-            var teamText = UIFactory.CreateText("Team", _content, teamInfo, 16);
+            if (state.CampRoster.Count > 0)
+                teamInfo += $"  | Camp: {state.CampRoster.Count} units";
+
+            var teamText = UIFactory.CreateText("Team", _content, teamInfo, 14);
             teamText.color = new Color(0.7f, 0.8f, 1f);
             var teamRt = teamText.rectTransform;
             teamRt.anchorMin = new Vector2(0f, 0f);
@@ -157,18 +160,18 @@ namespace AutobattlerSample.UI
                 manageBtn.onClick.AddListener(() => _onManageTeam?.Invoke());
             }
 
-            // Floor labels on the side
+            // Floor labels
             for (int floor = 0; floor < totalFloors; floor++)
             {
                 float y = yStart + floor * ySpacing;
-                string floorLabel = floor == totalFloors - 1 ? "BOSS" : $"Floor {floor + 1}";
-                var fText = UIFactory.CreateText($"Floor_{floor}", _content, floorLabel, 14);
+                string floorLabel = floor == totalFloors - 1 ? "BOSS" : $"F{floor + 1}";
+                var fText = UIFactory.CreateText($"Floor_{floor}", _content, floorLabel, 13);
                 fText.color = new Color(0.5f, 0.5f, 0.6f);
                 var fRt = fText.rectTransform;
                 fRt.anchorMin = new Vector2(0.5f, 0.5f);
                 fRt.anchorMax = new Vector2(0.5f, 0.5f);
-                fRt.sizeDelta = new Vector2(100f, 30f);
-                fRt.anchoredPosition = new Vector2(-500f, y);
+                fRt.sizeDelta = new Vector2(80f, 25f);
+                fRt.anchoredPosition = new Vector2(-530f, y);
             }
         }
 

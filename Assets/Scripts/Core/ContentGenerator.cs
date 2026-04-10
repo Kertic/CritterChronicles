@@ -27,9 +27,49 @@ namespace AutobattlerSample.Core
             return team;
         }
 
+        /// <summary>
+        /// Generate a set of random critters for the player to pick from at start.
+        /// </summary>
+        public List<UnitData> GenerateStartingPicks(int count = 5)
+        {
+            var picks = new List<UnitData>();
+            if (_database == null) return picks;
+
+            // Combine player units and shop units into a pool
+            var pool = new List<UnitData>();
+            if (_database.PlayerUnits != null) pool.AddRange(_database.PlayerUnits);
+            if (_database.ShopUnits != null)
+            {
+                foreach (var u in _database.ShopUnits)
+                {
+                    bool already = false;
+                    foreach (var p in pool)
+                    {
+                        if (p != null && u != null && p.UnitId == u.UnitId) { already = true; break; }
+                    }
+                    if (!already && u != null) pool.Add(u);
+                }
+            }
+
+            var used = new HashSet<int>();
+            for (int i = 0; i < count && used.Count < pool.Count; i++)
+            {
+                int idx;
+                int attempts = 0;
+                do { idx = Random.Range(0, pool.Count); attempts++; }
+                while (used.Contains(idx) && attempts < 30);
+                if (!used.Contains(idx) && pool[idx] != null)
+                {
+                    used.Add(idx);
+                    picks.Add(pool[idx]);
+                }
+            }
+            return picks;
+        }
+
         public EncounterData GenerateEncounter(int floor, int nodeIndex)
         {
-            int enemyCount = Mathf.Clamp(2 + floor / 2, 2, 4);
+            int enemyCount = Mathf.Clamp(2 + floor / 2, 2, 5);
             float scaleFactor = 1f + floor * 0.15f;
 
             var encounter = new EncounterData
@@ -71,7 +111,7 @@ namespace AutobattlerSample.Core
             if (template != null)
                 encounter.Enemies.Add(new UnitInstance(template));
 
-            int minionCount = Random.Range(1, 3);
+            int minionCount = Random.Range(2, 4);
             for (int i = 0; i < minionCount; i++)
             {
                 var minionTemplate = GetRandomUnit(_database != null ? _database.EnemyUnits : null);
@@ -102,16 +142,11 @@ namespace AutobattlerSample.Core
             return items;
         }
 
-        /// <summary>
-        /// Generate a mix of shop offerings: some units and some items.
-        /// Returns (units, items) tuple.
-        /// </summary>
         public (List<UnitData> units, List<ItemData> items) GenerateShopOfferings(int totalCount = 4)
         {
             var units = new List<UnitData>();
             var items = new List<ItemData>();
 
-            // Offer 1-2 units from ShopUnits
             if (_database != null && _database.ShopUnits != null && _database.ShopUnits.Count > 0)
             {
                 int unitCount = Mathf.Min(2, _database.ShopUnits.Count);
@@ -131,7 +166,6 @@ namespace AutobattlerSample.Core
                 }
             }
 
-            // Fill remaining with items
             int itemCount = totalCount - units.Count;
             var rewardItems = GenerateItemRewards(itemCount);
             items.AddRange(rewardItems);
