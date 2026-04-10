@@ -1,0 +1,56 @@
+# .github/workflows/build-and-upload-itch.yml
+name: Build and Upload to itch.io
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+
+      ITCH_USER: your_itch_username
+      ITCH_GAME: your-game-slug
+      ITCH_CHANNEL: windows
+      BUILD_NAME: MyGame
+      BUILD_PATH: build/windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-
+
+      - name: Build Unity project
+        uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: StandaloneWindows64
+          buildName: ${{ env.BUILD_NAME }}
+
+      - name: Prepare build folder
+        run: |
+          mkdir -p $BUILD_PATH
+          cp -r build/StandaloneWindows64/* $BUILD_PATH/
+
+      - name: Download butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip -d butler
+          chmod +x butler/butler
+
+      - name: Upload to itch.io
+        run: |
+          ./butler/butler push "$BUILD_PATH" "$ITCH_USER/$ITCH_GAME:$ITCH_CHANNEL"
