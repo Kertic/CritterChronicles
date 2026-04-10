@@ -13,7 +13,6 @@ namespace AutobattlerSample.Editor
         private const string ItemsPath = ContentRoot + "/Items";
         private const string DatabasePath = ContentRoot + "/DefaultContentDatabase.asset";
 
-        [MenuItem("Tools/Autobattler Sample/Create Default Content Assets")]
         public static void CreateDefaultContentAssets()
         {
             EnsureFolder("Assets/Resources");
@@ -87,22 +86,51 @@ namespace AutobattlerSample.Editor
             return database;
         }
 
+        [MenuItem("Tools/Autobattler Sample/Remove Generated Content")]
+        public static void ResetGeneratedContent()
+        {
+            if (!EditorUtility.DisplayDialog(
+                "Remove Generated Content",
+                "This will delete all generated content assets (units, items, database). Continue?",
+                "Remove", "Cancel"))
+                return;
+
+            if (AssetDatabase.IsValidFolder(ContentRoot))
+            {
+                AssetDatabase.DeleteAsset(ContentRoot);
+                AssetDatabase.Refresh();
+                Debug.Log("[ContentAssetCreator] Generated content removed.");
+            }
+            else
+            {
+                Debug.Log("[ContentAssetCreator] Nothing to remove — content folder does not exist.");
+            }
+        }
+
         private static UnitData CreateOrUpdateUnit(string assetName, string unitId, string displayName, int maxHp, int armor, int attackDamage)
         {
             string path = Path.Combine(UnitsPath, assetName + ".asset").Replace("\\", "/");
             var asset = AssetDatabase.LoadAssetAtPath<UnitData>(path);
             if (asset == null)
             {
+                // Set fields before CreateAsset so the initial serialization includes them.
                 asset = ScriptableObject.CreateInstance<UnitData>();
+                asset.UnitId = unitId;
+                asset.DisplayName = displayName;
+                asset.MaxHP = maxHp;
+                asset.Armor = armor;
+                asset.AttackDamage = attackDamage;
                 AssetDatabase.CreateAsset(asset, path);
             }
-
-            asset.UnitId = unitId;
-            asset.DisplayName = displayName;
-            asset.MaxHP = maxHp;
-            asset.Armor = armor;
-            asset.AttackDamage = attackDamage;
-            EditorUtility.SetDirty(asset);
+            else
+            {
+                asset.UnitId = unitId;
+                asset.DisplayName = displayName;
+                asset.MaxHP = maxHp;
+                asset.Armor = armor;
+                asset.AttackDamage = attackDamage;
+                EditorUtility.SetDirty(asset);
+            }
             return asset;
         }
 
@@ -112,14 +140,20 @@ namespace AutobattlerSample.Editor
             var asset = AssetDatabase.LoadAssetAtPath<ItemData>(path);
             if (asset == null)
             {
+                // Set fields before CreateAsset so the initial serialization includes them.
                 asset = ScriptableObject.CreateInstance<ItemData>();
+                asset.Name = itemName;
+                asset.Stat = stat;
+                asset.Amount = amount;
                 AssetDatabase.CreateAsset(asset, path);
             }
-
-            asset.Name = itemName;
-            asset.Stat = stat;
-            asset.Amount = amount;
-            EditorUtility.SetDirty(asset);
+            else
+            {
+                asset.Name = itemName;
+                asset.Stat = stat;
+                asset.Amount = amount;
+                EditorUtility.SetDirty(asset);
+            }
             return asset;
         }
 

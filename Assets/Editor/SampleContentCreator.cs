@@ -9,7 +9,7 @@ namespace AutobattlerSample.Editor
 {
     public static class SampleContentCreator
     {
-        [MenuItem("Tools/Autobattler Sample/Create Sample Scene")]
+        [MenuItem("Tools/Autobattler Sample/Generate Content & Scene")]
         public static void CreateSampleScene()
         {
             Directory.CreateDirectory("Assets/Scenes");

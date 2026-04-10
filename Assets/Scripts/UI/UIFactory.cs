@@ -115,6 +115,41 @@ namespace AutobattlerSample.UI
             return _circleSprite;
         }
 
+        /// <summary>Creates a background/fill HP bar pair. The fill Image uses Image.Type.Filled so
+        /// setting fillAmount (0–1) controls how much green bar is shown.</summary>
+        public static (Image background, Image fill) CreateHPBar(Transform parent, float width = 100f, float height = 10f)
+        {
+            // Background
+            var bgGo = new GameObject("HPBar_BG", typeof(RectTransform), typeof(Image));
+            bgGo.transform.SetParent(parent, false);
+            var bgImg = bgGo.GetComponent<Image>();
+            bgImg.color = new Color(0.1f, 0.1f, 0.1f, 0.85f);
+            bgImg.raycastTarget = false;
+            var bgRt = bgGo.GetComponent<RectTransform>();
+            bgRt.anchorMin = new Vector2(0.5f, 0.5f);
+            bgRt.anchorMax = new Vector2(0.5f, 0.5f);
+            bgRt.sizeDelta = new Vector2(width, height);
+            bgRt.anchoredPosition = Vector2.zero;
+
+            // Fill (child of background)
+            var fillGo = new GameObject("HPBar_Fill", typeof(RectTransform), typeof(Image));
+            fillGo.transform.SetParent(bgGo.transform, false);
+            var fillImg = fillGo.GetComponent<Image>();
+            fillImg.color = new Color(0.2f, 0.85f, 0.25f);
+            fillImg.raycastTarget = false;
+            fillImg.type = Image.Type.Filled;
+            fillImg.fillMethod = Image.FillMethod.Horizontal;
+            fillImg.fillOrigin = 0; // Left
+            fillImg.fillAmount = 1f;
+            var fillRt = fillGo.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = new Vector2(1f, 1f);
+            fillRt.offsetMax = new Vector2(-1f, -1f);
+
+            return (bgImg, fillImg);
+        }
+
         public static Image CreateLine(Transform parent, Vector2 start, Vector2 end, Color color, float thickness = 2f)
         {
             var go = new GameObject("Line", typeof(RectTransform), typeof(Image));

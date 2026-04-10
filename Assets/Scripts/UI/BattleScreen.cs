@@ -202,17 +202,21 @@ namespace AutobattlerSample.UI
             else
                 shape = UIFactory.CreateCircle(container.transform, color, 80f);
 
-            // Stat label above shape
+            // Stat label above shape (pushed up to make room for HP bar)
             var statsText = UIFactory.CreateText("Stats", container.transform, "", 16, TextAnchor.LowerCenter);
             var statsRt = statsText.rectTransform;
             statsRt.anchorMin = new Vector2(0.5f, 0.5f);
             statsRt.anchorMax = new Vector2(0.5f, 0.5f);
             statsRt.sizeDelta = new Vector2(200f, 70f);
-            statsRt.anchoredPosition = new Vector2(0f, 75f);
+            statsRt.anchoredPosition = new Vector2(0f, 100f);
+
+            // HP bar — sits between the shape and the stat text
+            var (hpBg, hpFill) = UIFactory.CreateHPBar(container.transform, 100f, 10f);
+            hpBg.rectTransform.anchoredPosition = new Vector2(0f, 50f);
 
             // Add UnitVisual component
             var visual = container.AddComponent<UnitVisual>();
-            visual.Init(unit, shape, statsText);
+            visual.Init(unit, shape, statsText, hpFill);
 
             _unitVisuals[unit] = visual;
             _unitPositions[unit] = position;
