@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using AutobattlerSample.Battle;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,17 +34,35 @@ namespace AutobattlerSample.UI
             {
                 _statText.text = $"{Unit.DisplayName}\n<color=red>DEAD</color>";
                 _shapeImage.color = new Color(_originalColor.r * 0.3f, _originalColor.g * 0.3f, _originalColor.b * 0.3f, 0.35f);
-                if (_hpBarFill != null) _hpBarFill.fillAmount = 0f;
+                SetHPBarWidth(0f);
                 return;
             }
+
             _statText.text = $"{Unit.DisplayName}\nHP:{Unit.CurrentHP}/{Unit.MaxHP}\nARM:{Unit.Armor}  ATK:{Unit.Attack}";
             if (_hpBarFill != null)
             {
                 float ratio = Unit.MaxHP > 0 ? (float)Unit.CurrentHP / Unit.MaxHP : 0f;
-                _hpBarFill.fillAmount = ratio;
-                // Colour shifts green → yellow → red as HP drops
-                _hpBarFill.color = Color.Lerp(new Color(0.9f, 0.2f, 0.2f), new Color(0.2f, 0.85f, 0.25f), ratio);
+                SetHPBarWidth(ratio);
+                _hpBarFill.color = new Color(0.2f, 0.85f, 0.25f);
             }
+        }
+
+        private void SetHPBarWidth(float ratio)
+        {
+            if (_hpBarFill == null)
+            {
+                return;
+            }
+
+            var fillRt = _hpBarFill.rectTransform;
+            var bgRt = fillRt.parent as RectTransform;
+            if (bgRt == null)
+            {
+                return;
+            }
+
+            float innerWidth = Mathf.Max(0f, bgRt.rect.width - 2f);
+            fillRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, innerWidth * Mathf.Clamp01(ratio));
         }
 
         public IEnumerator PlayAttackWiggle(Vector2 direction)
@@ -82,4 +100,3 @@ namespace AutobattlerSample.UI
         }
     }
 }
-

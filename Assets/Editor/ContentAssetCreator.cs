@@ -29,9 +29,9 @@ namespace AutobattlerSample.Editor
 
             database.PlayerUnits = new List<UnitData>
             {
-                CreateOrUpdateUnit("Knight", "knight", "Knight", 30, 2, 6),
-                CreateOrUpdateUnit("Ranger", "ranger", "Ranger", 18, 0, 8),
-                CreateOrUpdateUnit("Cleric", "cleric", "Cleric", 24, 1, 4)
+                CreateOrUpdateUnit("Bear", "bear", "Bear", 30, 2, 6),
+                CreateOrUpdateUnit("Wolf", "wolf", "Wolf", 18, 0, 8),
+                CreateOrUpdateUnit("Rabbit", "rabbit", "Rabbit", 24, 1, 4)
             };
 
             database.EnemyUnits = new List<UnitData>
