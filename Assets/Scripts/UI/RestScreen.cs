@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using AutobattlerSample.Core;
+using AutobattlerSample.Data;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,7 +24,7 @@ namespace AutobattlerSample.UI
             return screen;
         }
 
-        public void Show(RunState state)
+        public void Show(RunState state, ItemData rewardItem)
         {
             _root.SetActive(true);
             Clear();
@@ -34,23 +35,31 @@ namespace AutobattlerSample.UI
             SetRect(title.rectTransform, new Vector2(0f, 0.8f), new Vector2(1f, 0.92f));
 
             var desc = UIFactory.CreateText("Desc", _content,
-                "Your team rests by the fire.\nAll allies heal to full HP.", 26);
-            SetRect(desc.rectTransform, new Vector2(0.1f, 0.6f), new Vector2(0.9f, 0.78f));
+                "Your team rests by the fire.\nAll allies heal to full HP and you find a campsite reward.", 26);
+            SetRect(desc.rectTransform, new Vector2(0.1f, 0.62f), new Vector2(0.9f, 0.80f));
 
             string info = "";
             foreach (var unit in state.Team)
             {
                 string healInfo = unit.CurrentHP < unit.EffectiveMaxHP
-                    ? $"HP {unit.CurrentHP} → {unit.EffectiveMaxHP}"
+                    ? $"HP {unit.CurrentHP} -> {unit.EffectiveMaxHP}"
                     : "Full HP";
                 info += $"{unit.DisplayName}: {healInfo}\n";
             }
 
             var infoText = UIFactory.CreateText("HealInfo", _content, info, 24);
-            SetRect(infoText.rectTransform, new Vector2(0.2f, 0.3f), new Vector2(0.8f, 0.58f));
+            SetRect(infoText.rectTransform, new Vector2(0.2f, 0.34f), new Vector2(0.8f, 0.60f));
+
+            if (rewardItem != null)
+            {
+                var rewardText = UIFactory.CreateText("RewardInfo", _content,
+                    $"Campsite Reward:\n{rewardItem.Name}\n{rewardItem.TypeName}", 24);
+                rewardText.color = new Color(0.75f, 1f, 0.75f);
+                SetRect(rewardText.rectTransform, new Vector2(0.25f, 0.20f), new Vector2(0.75f, 0.34f));
+            }
 
             var button = UIFactory.CreateButton("Rest", _content, "Rest & Continue");
-            SetRect(button.GetComponent<RectTransform>(), new Vector2(0.35f, 0.12f), new Vector2(0.65f, 0.22f));
+            SetRect(button.GetComponent<RectTransform>(), new Vector2(0.35f, 0.08f), new Vector2(0.65f, 0.18f));
             button.onClick.AddListener(() => _onContinue?.Invoke());
         }
 

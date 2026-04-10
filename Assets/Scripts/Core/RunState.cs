@@ -102,6 +102,20 @@ namespace AutobattlerSample.Core
             return true;
         }
 
+        public bool ActivateFromCampAtIndex(UnitInstance unit, int targetIndex)
+        {
+            if (!CampRoster.Contains(unit)) return false;
+            if (UsedSlots + unit.SlotCost > MaxSlots) return false;
+
+            CampRoster.Remove(unit);
+            unit.IsActive = true;
+
+            targetIndex = System.Math.Clamp(targetIndex, 0, Team.Count);
+            Team.Insert(targetIndex, unit);
+            ReindexPositions();
+            return true;
+        }
+
         public void SwapPositions(int idxA, int idxB)
         {
             if (idxA < 0 || idxA >= Team.Count || idxB < 0 || idxB >= Team.Count) return;
@@ -120,6 +134,16 @@ namespace AutobattlerSample.Core
         {
             if (index < 0 || index >= Team.Count - 1) return;
             (Team[index], Team[index + 1]) = (Team[index + 1], Team[index]);
+            ReindexPositions();
+        }
+
+        public void MoveUnitToIndex(UnitInstance unit, int targetIndex)
+        {
+            if (!Team.Contains(unit)) return;
+
+            Team.Remove(unit);
+            targetIndex = System.Math.Clamp(targetIndex, 0, Team.Count);
+            Team.Insert(targetIndex, unit);
             ReindexPositions();
         }
 

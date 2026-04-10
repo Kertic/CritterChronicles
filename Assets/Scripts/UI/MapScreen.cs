@@ -61,12 +61,12 @@ namespace AutobattlerSample.UI
             mapContent.transform.SetParent(maskGo.transform, false);
             var mapContentRt = mapContent.GetComponent<RectTransform>();
 
-            float ySpacing = 120f;
-            float totalHeight = (totalFloors - 1) * ySpacing + 100f;
+            float ySpacing = 360f;
+            float totalHeight = (totalFloors - 1) * ySpacing + 300f;
             mapContentRt.anchorMin = new Vector2(0.5f, 0f);
             mapContentRt.anchorMax = new Vector2(0.5f, 0f);
             mapContentRt.pivot = new Vector2(0.5f, 0f);
-            mapContentRt.sizeDelta = new Vector2(1200f, totalHeight);
+            mapContentRt.sizeDelta = new Vector2(3600f, totalHeight);
             mapContentRt.anchoredPosition = Vector2.zero;
 
             var scroll = scrollGo.GetComponent<ScrollRect>();
@@ -75,15 +75,15 @@ namespace AutobattlerSample.UI
             scroll.horizontal = false;
             scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped;
-            scroll.scrollSensitivity = 40f;
+            scroll.scrollSensitivity = 120f;
 
             var nodePositions = new Dictionary<MapNode, Vector2>();
-            float xSpacing = 200f;
+            float xSpacing = 600f;
 
             for (int floor = 0; floor < totalFloors; floor++)
             {
                 var row = state.Map.Floors[floor];
-                float y = floor * ySpacing + 50f;
+                float y = floor * ySpacing + 150f;
                 float totalWidth = (row.Count - 1) * xSpacing;
 
                 for (int i = 0; i < row.Count; i++)
@@ -132,11 +132,11 @@ namespace AutobattlerSample.UI
                     var rt = button.GetComponent<RectTransform>();
                     rt.anchorMin = new Vector2(0.5f, 0f);
                     rt.anchorMax = new Vector2(0.5f, 0f);
-                    rt.sizeDelta = new Vector2(180f, 60f);
+                    rt.sizeDelta = new Vector2(540f, 180f);
                     rt.anchoredPosition = pos;
 
                     var labelText = button.GetComponentInChildren<Text>();
-                    if (labelText != null) labelText.fontSize = 16;
+                    if (labelText != null) labelText.fontSize = 42;
 
                     bool selectable = state.Map.IsNodeSelectable(node);
                     var capturedNode = node;
@@ -158,21 +158,21 @@ namespace AutobattlerSample.UI
             // Floor labels
             for (int floor = 0; floor < totalFloors; floor++)
             {
-                float y = floor * ySpacing + 50f;
+                float y = floor * ySpacing + 150f;
                 string floorLabel = floor == totalFloors - 1 ? "BOSS" : $"F{floor + 1}";
-                var fText = UIFactory.CreateText($"Floor_{floor}", mapContentRt, floorLabel, 13);
+                var fText = UIFactory.CreateText($"Floor_{floor}", mapContentRt, floorLabel, 39);
                 fText.color = new Color(0.5f, 0.5f, 0.6f);
                 var fRt = fText.rectTransform;
                 fRt.anchorMin = new Vector2(0.5f, 0f);
                 fRt.anchorMax = new Vector2(0.5f, 0f);
-                fRt.sizeDelta = new Vector2(80f, 25f);
-                fRt.anchoredPosition = new Vector2(-530f, y);
+                fRt.sizeDelta = new Vector2(240f, 75f);
+                fRt.anchoredPosition = new Vector2(-1590f, y);
             }
 
             // Scroll to current floor
             if (state.Map.CurrentNode != null)
             {
-                float targetY = state.Map.CurrentNode.Floor * ySpacing + 50f;
+                float targetY = state.Map.CurrentNode.Floor * ySpacing + 150f;
                 float normalizedY = totalHeight > 0 ? Mathf.Clamp01(targetY / totalHeight) : 0f;
                 scroll.verticalNormalizedPosition = normalizedY;
             }
@@ -193,7 +193,7 @@ namespace AutobattlerSample.UI
             foreach (var u in state.Team)
             {
                 string rankStr = u.Rank > 1 ? $"R{u.Rank} " : "";
-                string pos = $"P{u.Position}";
+                string pos = GetOrdinalLabel(u.Position);
                 teamInfo += $"  {u.DisplayName}({rankStr}{pos} HP:{u.CurrentHP}/{u.EffectiveMaxHP})";
             }
             if (state.CampRoster.Count > 0)
@@ -279,6 +279,20 @@ namespace AutobattlerSample.UI
                 baseColor = Color.Lerp(baseColor, new Color(0.8f, 0.15f, 0.1f), 0.4f);
 
             return baseColor;
+        }
+
+        private static string GetOrdinalLabel(int index)
+        {
+            return index switch
+            {
+                0 => "First",
+                1 => "Second",
+                2 => "Third",
+                3 => "Fourth",
+                4 => "Fifth",
+                5 => "Sixth",
+                _ => $"{index + 1}th"
+            };
         }
 
         private void Clear()

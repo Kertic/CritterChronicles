@@ -99,19 +99,19 @@ namespace AutobattlerSample.UI
                 "• <color=#6688CC>Battle</color> nodes pit your team against enemies.\n" +
                 "• <color=#CC8833>Elite</color> nodes have tougher foes with bonus HP.\n" +
                 "• <color=#CC3333>Boss</color> nodes are the final encounter — defeat the boss to win!\n" +
-                "• <color=#33AA33>Rest</color> nodes fully heal your entire team.\n" +
+                "• <color=#33AA33>Rest</color> nodes fully heal your entire team and grant one free item.\n" +
                 "• <color=#3388AA>Shop</color> nodes let you recruit new critters, upgrade existing ones, or buy items.\n" +
                 "• Enemies that survive a lost battle reinforce nearby future nodes (marked with !!)\n\n" +
 
                 "<color=#FFD700><b>== BATTLES ==</b></color>\n" +
                 "• Battles are fully automatic and turn-based by rounds.\n" +
-                "• Each round, all living units act in random order.\n" +
+                "• At the start of each round, the UI shows the full turn order and who acts first.\n" +
                 "• Each unit has <color=#FFAA33>Actions</color> (attack, heal, shield, etc.) with cooldowns.\n" +
                 "• Actions are used in <color=#FFAA33>priority order</color> (lowest number = used first). " +
                 "You can reorder priorities in the Manage Team screen.\n" +
                 "• When all actions are on cooldown, the unit skips its turn.\n" +
-                "• Front units (Position 0) are targeted first by enemy attacks.\n" +
-                "• You can <color=#FFAA33>pause/unpause</color> combat at any time with the Pause button.\n\n" +
+                "• Front units (<color=#FFAA33>First</color> position) are targeted first by enemy attacks.\n" +
+                "• Combat advances one round at a time with <color=#FFAA33>Next Round</color>, or continuously if <color=#FFAA33>Auto</color> is enabled.\n\n" +
 
                 "<color=#FFD700><b>== ACTIONS & COOLDOWNS ==</b></color>\n" +
                 "• <color=#CC4444>ATK</color> — Attack the closest enemy for X damage.\n" +
@@ -129,8 +129,8 @@ namespace AutobattlerSample.UI
 
                 "<color=#FFD700><b>== TEAM MANAGEMENT ==</b></color>\n" +
                 "• Your team has a max of <color=#FFAA33>6 slots</color>. Large critters take 2 slots.\n" +
-                "• Use the <color=#4488CC>Manage Team</color> button on the map to rearrange formation " +
-                "(front to back), edit action priorities, equip/unequip items, or send units to camp.\n" +
+                "• Use the <color=#4488CC>Manage Team</color> button on the map to drag critters into formation order, " +
+                "drag camp critters into the party, drag active critters back to camp, and drag camp items onto a critter to equip them.\n" +
                 "• Camp units don't fight but can be swapped in at any time.\n" +
                 "• Items can be unequipped and stored in camp, then given to a different unit.\n\n" +
 
@@ -146,10 +146,10 @@ namespace AutobattlerSample.UI
                 "• Ranking up increases Max HP and scales attack damage.\n\n" +
 
                 "<color=#FFD700><b>== TIPS ==</b></color>\n" +
-                "• Put tanky units in front (low position) to absorb damage.\n" +
+                "• Put tanky units in front (First, Second) to absorb damage.\n" +
                 "• Healers behind the front line keep your tank alive and trigger HasteOnHeal passives.\n" +
                 "• Balance your team between damage dealers and support.\n" +
-                "• Visit shops and rests when you can — the dungeon gets harder with each floor.\n" +
+                "• Longer runs now have many more floors, so pace your team and item usage.\n" +
                 "• Check the combat log for detailed breakdowns of what happened each round.";
 
             var bodyText = UIFactory.CreateText("Body", contentGo.transform, body, 18, TextAnchor.UpperLeft);

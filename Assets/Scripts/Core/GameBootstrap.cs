@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AutobattlerSample.Battle;
 using AutobattlerSample.Data;
 using AutobattlerSample.Map;
@@ -11,7 +12,7 @@ namespace AutobattlerSample.Core
     public class GameBootstrap : MonoBehaviour
     {
         [Header("Map Settings")]
-        public int Floors = 15;
+        public int Floors = 45;
         public int Width = 5;
         public int Seed = 0;
 
@@ -30,6 +31,7 @@ namespace AutobattlerSample.Core
         private BattleCombatManager _combatManager;
         private BattleResult _lastBattleResult;
         private ContentGenerator _contentGenerator;
+        private ItemData _pendingRestItem;
 
         private void Start()
         {
@@ -148,7 +150,8 @@ namespace AutobattlerSample.Core
 
             if (node.Type == MapNodeType.Rest)
             {
-                _restScreen.Show(_runState);
+                _pendingRestItem = _contentGenerator.GenerateItemRewards(1).FirstOrDefault();
+                _restScreen.Show(_runState, _pendingRestItem);
                 return;
             }
 
@@ -162,7 +165,7 @@ namespace AutobattlerSample.Core
             // Battle, Elite, or Boss
             var activeTeam = _runState.GetActiveTeam();
             var (allies, enemies) = _battleScreen.ShowBattle(node, activeTeam, node.Encounter);
-            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd, _battleScreen.OnNewRound);
+            _combatManager.StartBattle(allies, enemies, _battleScreen.OnTurnAction, OnBattleEnd, _battleScreen.OnNewRound, _battleScreen.OnTurnOrderReady);
         }
 
         private void OnBattleEnd(BattleResult result)
@@ -231,6 +234,13 @@ namespace AutobattlerSample.Core
             foreach (var unit in _runState.CampRoster)
             {
                 unit.FullHeal();
+            }
+
+            if (_pendingRestItem != null)
+            {
+                _runState.CampItems.Add(_pendingRestItem);
+                Debug.Log($"Rest reward added to camp: {_pendingRestItem.Name}");
+                _pendingRestItem = null;
             }
             ShowMap();
         }

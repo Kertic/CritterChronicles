@@ -14,25 +14,34 @@ namespace AutobattlerSample.Battle
         private Action<TurnAction> _onTurnAction;
         private Action<BattleResult> _onBattleEnd;
         private Action<int> _onNewRound;
+        private Action<IReadOnlyList<BattleUnit>> _onTurnOrderReady;
         private Coroutine _battleCoroutine;
-        private bool _isPaused;
+        private bool _autoAdvance;
+        private bool _waitingForNextRound;
 
-        public bool IsPaused => _isPaused;
+        public bool AutoAdvance => _autoAdvance;
+        public bool WaitingForNextRound => _waitingForNextRound;
 
-        public void TogglePause()
+        public void SetAutoAdvance(bool enabled)
         {
-            _isPaused = !_isPaused;
+            _autoAdvance = enabled;
+        }
+
+        public void AdvanceToNextRound()
+        {
+            _waitingForNextRound = false;
         }
 
         public void StartBattle(List<BattleUnit> allies, List<BattleUnit> enemies,
             Action<TurnAction> onTurnAction, Action<BattleResult> onBattleEnd,
-            Action<int> onNewRound = null)
+            Action<int> onNewRound = null, Action<IReadOnlyList<BattleUnit>> onTurnOrderReady = null)
         {
             _allies = allies;
             _enemies = enemies;
             _onTurnAction = onTurnAction;
             _onBattleEnd = onBattleEnd;
             _onNewRound = onNewRound;
+            _onTurnOrderReady = onTurnOrderReady;
 
             // Reset all cooldowns
             foreach (var u in _allies)
@@ -47,7 +56,8 @@ namespace AutobattlerSample.Battle
 
         private IEnumerator RunBattle()
         {
-            _isPaused = false;
+            _autoAdvance = false;
+            _waitingForNextRound = false;
             yield return new WaitForSeconds(0.5f);
 
             var result = new BattleResult();
@@ -69,6 +79,10 @@ namespace AutobattlerSample.Battle
                 turnOrder.AddRange(_allies.Where(u => u.IsAlive));
                 turnOrder.AddRange(_enemies.Where(u => u.IsAlive));
                 ShuffleList(turnOrder);
+                _onTurnOrderReady?.Invoke(turnOrder);
+
+                _waitingForNextRound = !_autoAdvance;
+                yield return new WaitUntil(() => _autoAdvance || !_waitingForNextRound);
 
                 foreach (var unit in turnOrder)
                 {
@@ -91,7 +105,6 @@ namespace AutobattlerSample.Battle
                         };
                         result.TurnLog.Add(skipAction);
                         _onTurnAction?.Invoke(skipAction);
-                        yield return new WaitUntil(() => !_isPaused);
                         yield return new WaitForSeconds(0.25f);
                         continue;
                     }
@@ -121,7 +134,6 @@ namespace AutobattlerSample.Battle
                     {
                         result.TurnLog.Add(action);
                         _onTurnAction?.Invoke(action);
-                        yield return new WaitUntil(() => !_isPaused);
                         yield return new WaitForSeconds(0.7f);
                     }
                 }

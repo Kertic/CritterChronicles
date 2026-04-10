@@ -17,14 +17,16 @@ namespace AutobattlerSample.UI
         private Text _footer;
         private Text _turnText;
         private Text _roundText;
+        private Text _turnOrderText;
         private bool _lastBattleWon;
 
         private readonly Dictionary<BattleUnit, UnitVisual> _unitVisuals = new();
         private readonly Dictionary<BattleUnit, Vector2> _unitPositions = new();
         private CombatLog _combatLog;
         private BattleCombatManager _combatManager;
-        private Button _pauseBtn;
-        private Text _pauseBtnLabel;
+        private Button _nextRoundBtn;
+        private Button _autoBtn;
+        private Text _autoBtnLabel;
 
         private static readonly Color[] allyColors =
         {
@@ -73,7 +75,6 @@ namespace AutobattlerSample.UI
             _unitVisuals.Clear();
             _unitPositions.Clear();
 
-            // Title
             var title = UIFactory.CreateText("Title", _content, $"Battle: {node.Label}", 36);
             var titleRt = title.rectTransform;
             titleRt.anchorMin = new Vector2(0f, 1f);
@@ -81,35 +82,23 @@ namespace AutobattlerSample.UI
             titleRt.offsetMin = new Vector2(20f, -60f);
             titleRt.offsetMax = new Vector2(-20f, -10f);
 
-            // Round counter
             _roundText = UIFactory.CreateText("RoundText", _content, "Round 0", 22);
             _roundText.color = new Color(1f, 0.7f, 0.3f);
             _roundText.fontStyle = FontStyle.Bold;
-            var roundRt = _roundText.rectTransform;
-            roundRt.anchorMin = new Vector2(0.42f, 0.90f);
-            roundRt.anchorMax = new Vector2(0.58f, 0.96f);
-            roundRt.offsetMin = Vector2.zero;
-            roundRt.offsetMax = Vector2.zero;
+            SetAnchoredRect(_roundText.rectTransform, new Vector2(0.42f, 0.90f), new Vector2(0.58f, 0.96f));
 
-            // Turn indicator text
+            _turnOrderText = UIFactory.CreateText("TurnOrder", _content, "Turn order: waiting...", 18, TextAnchor.UpperLeft);
+            _turnOrderText.color = new Color(0.9f, 0.92f, 1f);
+            SetAnchoredRect(_turnOrderText.rectTransform, new Vector2(0.30f, 0.80f), new Vector2(0.70f, 0.89f));
+
             _turnText = UIFactory.CreateText("TurnText", _content, "Battle starting...", 20);
             _turnText.color = new Color(1f, 0.9f, 0.5f);
-            var turnRt = _turnText.rectTransform;
-            turnRt.anchorMin = new Vector2(0.15f, 0.47f);
-            turnRt.anchorMax = new Vector2(0.85f, 0.53f);
-            turnRt.offsetMin = Vector2.zero;
-            turnRt.offsetMax = Vector2.zero;
+            SetAnchoredRect(_turnText.rectTransform, new Vector2(0.15f, 0.47f), new Vector2(0.85f, 0.53f));
 
-            // "VS" text
             var vsText = UIFactory.CreateText("VS", _content, "VS", 52);
             vsText.color = new Color(1f, 0.8f, 0.3f, 0.5f);
-            var vsRt = vsText.rectTransform;
-            vsRt.anchorMin = new Vector2(0.47f, 0.55f);
-            vsRt.anchorMax = new Vector2(0.53f, 0.65f);
-            vsRt.offsetMin = Vector2.zero;
-            vsRt.offsetMax = Vector2.zero;
+            SetAnchoredRect(vsText.rectTransform, new Vector2(0.47f, 0.55f), new Vector2(0.53f, 0.65f));
 
-            // Side labels
             var allyLabel = UIFactory.CreateText("AllyLabel", _content, "YOUR TEAM", 22);
             allyLabel.color = new Color(0.4f, 0.7f, 1f);
             SetAnchoredRect(allyLabel.rectTransform, new Vector2(0.02f, 0.85f), new Vector2(0.3f, 0.92f));
@@ -118,69 +107,128 @@ namespace AutobattlerSample.UI
             enemyLabel.color = new Color(1f, 0.4f, 0.4f);
             SetAnchoredRect(enemyLabel.rectTransform, new Vector2(0.7f, 0.85f), new Vector2(0.98f, 0.92f));
 
-            // Create ally BattleUnits — sorted by Position (front first)
             var allyBattleUnits = new List<BattleUnit>();
             var activeAllies = allyInstances.Where(u => u.IsAlive && u.IsActive).OrderBy(u => u.Position).ToList();
             for (int i = 0; i < activeAllies.Count; i++)
             {
                 var bu = new BattleUnit(activeAllies[i], true);
                 allyBattleUnits.Add(bu);
-                Vector2 pos = GetUnitPositionHorizontal(i, activeAllies.Count, true);
-                CreateUnitVisual(bu, pos, true, i);
+                CreateUnitVisual(bu, GetUnitPositionHorizontal(i, activeAllies.Count, true), true, i);
             }
 
-            // Create enemy BattleUnits — sorted by Position (front first)
             var enemyBattleUnits = new List<BattleUnit>();
-            // Assign positions to enemies
             for (int i = 0; i < encounter.Enemies.Count; i++)
                 encounter.Enemies[i].Position = i;
+
             var sortedEnemies = encounter.Enemies.OrderBy(e => e.Position).ToList();
             for (int i = 0; i < sortedEnemies.Count; i++)
             {
                 var bu = new BattleUnit(sortedEnemies[i], false);
                 enemyBattleUnits.Add(bu);
-                Vector2 pos = GetUnitPositionHorizontal(i, sortedEnemies.Count, false);
-                CreateUnitVisual(bu, pos, false, i);
+                CreateUnitVisual(bu, GetUnitPositionHorizontal(i, sortedEnemies.Count, false), false, i);
             }
 
-            // Create combat log panel
             _combatLog = CombatLog.Create(_content);
-
-            // Pause button
-            _pauseBtn = UIFactory.CreateButton("PauseBtn", _content, "\u23F8 Pause");
-            var pauseRt = _pauseBtn.GetComponent<RectTransform>();
-            pauseRt.anchorMin = new Vector2(1f, 1f);
-            pauseRt.anchorMax = new Vector2(1f, 1f);
-            pauseRt.pivot = new Vector2(1f, 1f);
-            pauseRt.sizeDelta = new Vector2(120f, 40f);
-            pauseRt.anchoredPosition = new Vector2(-20f, -15f);
-            _pauseBtn.GetComponent<Image>().color = new Color(0.3f, 0.25f, 0.4f);
-            _pauseBtnLabel = _pauseBtn.GetComponentInChildren<Text>();
-            if (_pauseBtnLabel != null) { _pauseBtnLabel.fontSize = 18; _pauseBtnLabel.fontStyle = FontStyle.Bold; }
-            _pauseBtn.onClick.AddListener(() =>
-            {
-                if (_combatManager != null)
-                {
-                    _combatManager.TogglePause();
-                    _pauseBtnLabel.text = _combatManager.IsPaused ? "\u25B6 Resume" : "\u23F8 Pause";
-                    _pauseBtn.GetComponent<Image>().color = _combatManager.IsPaused
-                        ? new Color(0.2f, 0.45f, 0.2f)
-                        : new Color(0.3f, 0.25f, 0.4f);
-                }
-            });
+            CreateRoundControls();
+            UpdateRoundControls();
 
             return (allyBattleUnits, enemyBattleUnits);
+        }
+
+        private void CreateRoundControls()
+        {
+            _nextRoundBtn = UIFactory.CreateButton("NextRoundBtn", _content, "Next Round");
+            var nextRt = _nextRoundBtn.GetComponent<RectTransform>();
+            nextRt.anchorMin = new Vector2(1f, 1f);
+            nextRt.anchorMax = new Vector2(1f, 1f);
+            nextRt.pivot = new Vector2(1f, 1f);
+            nextRt.sizeDelta = new Vector2(150f, 40f);
+            nextRt.anchoredPosition = new Vector2(-20f, -15f);
+            _nextRoundBtn.GetComponent<Image>().color = new Color(0.2f, 0.38f, 0.22f);
+            var nextLabel = _nextRoundBtn.GetComponentInChildren<Text>();
+            if (nextLabel != null)
+            {
+                nextLabel.fontSize = 18;
+                nextLabel.fontStyle = FontStyle.Bold;
+            }
+            _nextRoundBtn.onClick.AddListener(() =>
+            {
+                _combatManager?.AdvanceToNextRound();
+                UpdateRoundControls();
+            });
+
+            _autoBtn = UIFactory.CreateButton("AutoBtn", _content, "Auto: Off");
+            var autoRt = _autoBtn.GetComponent<RectTransform>();
+            autoRt.anchorMin = new Vector2(1f, 1f);
+            autoRt.anchorMax = new Vector2(1f, 1f);
+            autoRt.pivot = new Vector2(1f, 1f);
+            autoRt.sizeDelta = new Vector2(130f, 40f);
+            autoRt.anchoredPosition = new Vector2(-180f, -15f);
+            _autoBtnLabel = _autoBtn.GetComponentInChildren<Text>();
+            if (_autoBtnLabel != null)
+            {
+                _autoBtnLabel.fontSize = 18;
+                _autoBtnLabel.fontStyle = FontStyle.Bold;
+            }
+            _autoBtn.onClick.AddListener(() =>
+            {
+                if (_combatManager == null)
+                    return;
+
+                _combatManager.SetAutoAdvance(!_combatManager.AutoAdvance);
+                if (_combatManager.AutoAdvance && _combatManager.WaitingForNextRound)
+                    _combatManager.AdvanceToNextRound();
+                UpdateRoundControls();
+            });
+        }
+
+        private void UpdateRoundControls()
+        {
+            if (_combatManager == null)
+                return;
+
+            if (_autoBtnLabel != null)
+                _autoBtnLabel.text = _combatManager.AutoAdvance ? "Auto: On" : "Auto: Off";
+
+            if (_autoBtn != null)
+                _autoBtn.GetComponent<Image>().color = _combatManager.AutoAdvance
+                    ? new Color(0.2f, 0.45f, 0.2f)
+                    : new Color(0.3f, 0.25f, 0.4f);
+
+            if (_nextRoundBtn != null)
+                _nextRoundBtn.interactable = !_combatManager.AutoAdvance;
         }
 
         public void OnNewRound(int round)
         {
             if (_roundText != null)
                 _roundText.text = $"Round {round}";
+            UpdateRoundControls();
+        }
+
+        public void OnTurnOrderReady(IReadOnlyList<BattleUnit> turnOrder)
+        {
+            if (_turnOrderText == null)
+                return;
+
+            if (turnOrder == null || turnOrder.Count == 0)
+            {
+                _turnOrderText.text = "Turn order: none";
+                return;
+            }
+
+            var order = turnOrder.Select((unit, index) =>
+            {
+                string marker = index == 0 ? ">> " : "";
+                string side = unit.IsAlly ? "A" : "E";
+                return $"{marker}{side}:{unit.DisplayName}";
+            });
+            _turnOrderText.text = "Turn order: " + string.Join("  |  ", order);
+            UpdateRoundControls();
         }
 
         public void OnTurnAction(TurnAction action)
         {
-            // Handle cooldown skip
             if (action.WasOnCooldown)
             {
                 if (_turnText != null)
@@ -193,7 +241,6 @@ namespace AutobattlerSample.UI
                 return;
             }
 
-            // Update turn text based on action type
             if (_turnText != null)
             {
                 switch (action.UsedActionType)
@@ -224,7 +271,6 @@ namespace AutobattlerSample.UI
                 }
             }
 
-            // Attacker visual effects
             if (_unitVisuals.TryGetValue(action.Attacker, out var attackerVisual))
             {
                 if (action.UsedActionType == ActionType.Attack)
@@ -235,7 +281,6 @@ namespace AutobattlerSample.UI
                 attackerVisual.UpdateStats();
             }
 
-            // Target visual effects
             if (action.Target != null && action.Target != action.Attacker &&
                 _unitVisuals.TryGetValue(action.Target, out var targetVisual))
             {
@@ -244,7 +289,6 @@ namespace AutobattlerSample.UI
                 targetVisual.UpdateStats();
             }
 
-            // Floating numbers
             if (action.UsedActionType == ActionType.Attack && _unitPositions.TryGetValue(action.Target, out var targetPos))
             {
                 Color dmgColor = action.Attacker.IsAlly ? new Color(1f, 1f, 0.3f) : new Color(1f, 0.3f, 0.3f);
@@ -252,9 +296,7 @@ namespace AutobattlerSample.UI
             }
 
             if (action.LifestealHealed > 0 && _unitPositions.TryGetValue(action.Attacker, out var atkPos))
-            {
                 DamageNumber.SpawnHeal(_content, atkPos + new Vector2(0, 55f), action.LifestealHealed);
-            }
 
             if ((action.UsedActionType == ActionType.HealSelf || action.UsedActionType == ActionType.HealFront)
                 && action.HealAmount > 0 && action.Target != null && _unitPositions.TryGetValue(action.Target, out var healPos))
@@ -262,7 +304,6 @@ namespace AutobattlerSample.UI
                 DamageNumber.SpawnHeal(_content, healPos + new Vector2(0, 55f), action.HealAmount);
             }
 
-            // HealAll: show floating heal numbers on each healed unit and update their visuals
             if (action.UsedActionType == ActionType.HealAll && action.HealAllResults != null)
             {
                 foreach (var (healedUnit, healed) in action.HealAllResults)
@@ -318,11 +359,9 @@ namespace AutobattlerSample.UI
             containerRt.sizeDelta = Vector2.zero;
 
             Color color = isAlly ? allyColors[index % allyColors.Length] : enemyColors[index % enemyColors.Length];
-            Image shape;
-            if (isAlly)
-                shape = UIFactory.CreateSquare(container.transform, color, 80f);
-            else
-                shape = UIFactory.CreateCircle(container.transform, color, 80f);
+            Image shape = isAlly
+                ? UIFactory.CreateSquare(container.transform, color, 80f)
+                : UIFactory.CreateCircle(container.transform, color, 80f);
 
             var statsText = UIFactory.CreateText("Stats", container.transform, "", 14, TextAnchor.LowerCenter);
             var statsRt = statsText.rectTransform;
@@ -341,31 +380,15 @@ namespace AutobattlerSample.UI
             _unitPositions[unit] = position;
         }
 
-        /// <summary>
-        /// Horizontal layout: allies on left, enemies on right.
-        /// Units within a team are spread horizontally (side by side).
-        /// Front units are closest to center, back units further out.
-        /// </summary>
         private Vector2 GetUnitPositionHorizontal(int index, int total, bool isAlly)
         {
-            // Y position: fixed baseline
             float y = 30f;
-
-            // X position: spread horizontally within each side
             float spacing = 120f;
 
             if (isAlly)
-            {
-                // Allies on the left; front (index 0) = closest to center (rightmost)
-                float x = -200f - index * spacing;
-                return new Vector2(x, y);
-            }
-            else
-            {
-                // Enemies on the right; front (index 0) = closest to center (leftmost)
-                float x = 200f + index * spacing;
-                return new Vector2(x, y);
-            }
+                return new Vector2(-200f - index * spacing, y);
+
+            return new Vector2(200f + index * spacing, y);
         }
 
         private void Clear()
