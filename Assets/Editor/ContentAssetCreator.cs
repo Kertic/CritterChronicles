@@ -86,7 +86,7 @@ namespace AutobattlerSample.Editor
             return database;
         }
 
-        [MenuItem("Tools/Autobattler Sample/Remove Generated Content")]
+        [MenuItem("Tools/CritterChronicles Sample/Remove Generated Content")]
         public static void ResetGeneratedContent()
         {
             if (!EditorUtility.DisplayDialog(
