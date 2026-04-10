@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58ba830c8aff45f4a8679ce774a612db, type: 3}
+  m_Name: DefaultContentDatabase
+  m_EditorClassIdentifier: 
+  PlayerUnits:
+  - {fileID: 11400000, guid: e542a66a91e467948a23a1bbb6e236e8, type: 2}
+  - {fileID: 11400000, guid: 847ab8642dd0b37429b5dc5658739b52, type: 2}
+  - {fileID: 11400000, guid: 0e3a224628146ba468eda0e9a12133ec, type: 2}
+  EnemyUnits:
+  - {fileID: 11400000, guid: 85f0e39939cea5d48ba19f9f403060e6, type: 2}
+  - {fileID: 11400000, guid: 915d5816a5a0d0f4ab5f08a1b1ba9f7f, type: 2}
+  - {fileID: 11400000, guid: d0f18b16c7b0c3b4f9f281e1b9e0c467, type: 2}
+  - {fileID: 11400000, guid: b09fcbc9319c10242a06744784b80603, type: 2}
+  - {fileID: 11400000, guid: 0d6195348d8eb7a45bb1cf38650b4cb5, type: 2}
+  - {fileID: 11400000, guid: b80801aaf9503384e91b11e90d636267, type: 2}
+  BossUnits:
+  - {fileID: 11400000, guid: d11b4aeaca432954d91fc1fbd4d8639f, type: 2}
+  - {fileID: 11400000, guid: f05842309adb3f54782d1ed55c951745, type: 2}
+  - {fileID: 11400000, guid: cf2eae84375aeb847ac23c0f468d03a1, type: 2}
+  RewardItems:
+  - {fileID: 11400000, guid: 90a9ad7c91113954c82b18b7bf72835a, type: 2}
+  - {fileID: 11400000, guid: 353d8f8c871c26949876c67c33df191f, type: 2}
+  - {fileID: 11400000, guid: 7cc0d85e52c1de1499a191a7e29b3b40, type: 2}
+  - {fileID: 11400000, guid: f5e6e06c737390a42b1c68e33d3e0611, type: 2}
+  - {fileID: 11400000, guid: 61ac9be1a6c538741a566e0f31266e90, type: 2}
+  - {fileID: 11400000, guid: 8961b0335077b7f4b8388ac4a11233d9, type: 2}
+  - {fileID: 11400000, guid: 68250c5677fbd864a805d4b2deb1a565, type: 2}
+  - {fileID: 11400000, guid: 665ed54611c6b034c8f5c218992a888b, type: 2}
+  - {fileID: 11400000, guid: 7f1625b5815f12e41849f443bc59c9eb, type: 2}
+  FloorEncounterNames:
+  - Scouts
+  - Raiders
+  - Warband
+  - Horde
+  - Legion

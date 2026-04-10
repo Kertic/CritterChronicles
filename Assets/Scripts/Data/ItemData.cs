@@ -1,4 +1,6 @@
-﻿namespace AutobattlerSample.Data
+using UnityEngine;
+
+namespace AutobattlerSample.Data
 {
     public enum StatType
     {
@@ -7,7 +9,8 @@
         AttackDamage
     }
 
-    public class ItemData
+    [CreateAssetMenu(menuName = "Autobattler/Item Data")]
+    public class ItemData : ScriptableObject
     {
         public string Name;
         public StatType Stat;
@@ -50,4 +53,3 @@
         }
     }
 }
-

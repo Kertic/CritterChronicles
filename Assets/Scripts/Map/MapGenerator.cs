@@ -6,6 +6,13 @@ namespace AutobattlerSample.Map
 {
     public class MapGenerator
     {
+        private readonly ContentGenerator _contentGenerator;
+
+        public MapGenerator(ContentGenerator contentGenerator)
+        {
+            _contentGenerator = contentGenerator;
+        }
+
         public MapModel Generate(int floors = 6, int width = 3, int seed = 0)
         {
             Random.InitState(seed == 0 ? System.Environment.TickCount : seed);
@@ -25,12 +32,12 @@ namespace AutobattlerSample.Map
                     if (isBossFloor)
                     {
                         nodeType = MapNodeType.Boss;
-                        encounter = ContentGenerator.GenerateBossEncounter();
+                        encounter = _contentGenerator.GenerateBossEncounter();
                     }
                     else if (floor == 0)
                     {
                         nodeType = MapNodeType.Battle;
-                        encounter = ContentGenerator.GenerateEncounter(floor, i);
+                        encounter = _contentGenerator.GenerateEncounter(floor, i);
                     }
                     else
                     {
@@ -42,12 +49,12 @@ namespace AutobattlerSample.Map
                         else if (roll < 0.30f)
                         {
                             nodeType = MapNodeType.Elite;
-                            encounter = ContentGenerator.GenerateEliteEncounter(floor, i);
+                            encounter = _contentGenerator.GenerateEliteEncounter(floor, i);
                         }
                         else
                         {
                             nodeType = MapNodeType.Battle;
-                            encounter = ContentGenerator.GenerateEncounter(floor, i);
+                            encounter = _contentGenerator.GenerateEncounter(floor, i);
                         }
                     }
 

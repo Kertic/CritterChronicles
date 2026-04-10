@@ -14,6 +14,9 @@ namespace AutobattlerSample.Core
         public int Width = 3;
         public int Seed = 0;
 
+        [Header("Content")]
+        [SerializeField] private ContentDatabase contentDatabase;
+
         private RunState _runState;
         private MapScreen _mapScreen;
         private BattleScreen _battleScreen;
@@ -21,9 +24,19 @@ namespace AutobattlerSample.Core
         private RestScreen _restScreen;
         private BattleCombatManager _combatManager;
         private BattleResult _lastBattleResult;
+        private ContentGenerator _contentGenerator;
 
         private void Start()
         {
+            contentDatabase = ResolveContentDatabase();
+            if (contentDatabase == null)
+            {
+                Debug.LogError("GameBootstrap requires a ContentDatabase asset. Assign one in the inspector or create Resources/Content/DefaultContentDatabase.");
+                enabled = false;
+                return;
+            }
+
+            _contentGenerator = new ContentGenerator(contentDatabase);
             EnsureEventSystem();
             BuildScreens();
             StartRun();
@@ -56,8 +69,8 @@ namespace AutobattlerSample.Core
         {
             _runState = new RunState();
             _runState.Team.Clear();
-            _runState.Team.AddRange(ContentGenerator.GeneratePlayerTeam());
-            _runState.Map = new MapGenerator().Generate(Floors, Width, Seed);
+            _runState.Team.AddRange(_contentGenerator.GeneratePlayerTeam());
+            _runState.Map = new MapGenerator(_contentGenerator).Generate(Floors, Width, Seed);
 
             ShowMap();
         }
@@ -120,7 +133,7 @@ namespace AutobattlerSample.Core
                 }
 
                 // Show reward screen with item choices
-                var rewards = ContentGenerator.GenerateItemRewards(3);
+                var rewards = _contentGenerator.GenerateItemRewards(3);
                 _rewardScreen.Show(rewards, _runState.Team);
                 _battleScreen.Hide();
             }
@@ -163,6 +176,16 @@ namespace AutobattlerSample.Core
             }
 
             ShowMap();
+        }
+
+        private ContentDatabase ResolveContentDatabase()
+        {
+            if (contentDatabase != null)
+            {
+                return contentDatabase;
+            }
+
+            return Resources.Load<ContentDatabase>("Content/DefaultContentDatabase");
         }
     }
 }

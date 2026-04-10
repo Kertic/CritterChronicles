@@ -22,12 +22,18 @@ namespace AutobattlerSample.Editor
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.08f, 0.08f, 0.1f);
 
-            // Game bootstrap — all content is generated procedurally at runtime
+            var contentDatabase = ContentAssetCreator.EnsureDefaultContentDatabase();
+
+            // Game bootstrap
             var systems = new GameObject("Systems");
             var bootstrap = systems.AddComponent<GameBootstrap>();
             bootstrap.Floors = 6;
             bootstrap.Width = 3;
-            bootstrap.Seed = 0; // 0 = random seed each run
+            bootstrap.Seed = 0;
+
+            var serializedBootstrap = new SerializedObject(bootstrap);
+            serializedBootstrap.FindProperty("contentDatabase").objectReferenceValue = contentDatabase;
+            serializedBootstrap.ApplyModifiedPropertiesWithoutUndo();
 
             // Event system
             var eventSystemGo = new GameObject("EventSystem");
@@ -37,7 +43,7 @@ namespace AutobattlerSample.Editor
             const string scenePath = "Assets/Scenes/AutobattlerSampleScene.unity";
             EditorSceneManager.SaveScene(scene, scenePath);
             EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-            Debug.Log("Autobattler sample scene created! Press Play to start. All encounters generated procedurally.");
+            Debug.Log("Autobattler sample scene created with a default content database. Press Play to start.");
         }
     }
 }
