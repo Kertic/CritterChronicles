@@ -46,11 +46,12 @@ namespace AutobattlerSample.UI
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                string statColor = item.Stat == StatType.HP ? "#66ff66" :
-                                   item.Stat == StatType.Armor ? "#6699ff" : "#ff6666";
+                string statColor = item.Type == ItemType.MaxHP ? "#66ff66" :
+                                   item.Type == ItemType.Shield ? "#6699ff" : "#cc88ff";
+                string sign = item.Type == ItemType.CooldownReduction ? "-" : "+";
 
                 var button = UIFactory.CreateButton($"Item_{i}", _content,
-                    $"{item.Name}\n<color={statColor}>+{item.Amount} {item.StatName}</color>");
+                    $"{item.Name}\n<color={statColor}>{sign}{item.Amount} {item.TypeName}</color>");
                 var rt = button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.1f + i * 0.28f, 0.4f);
                 rt.anchorMax = new Vector2(0.3f + i * 0.28f, 0.7f);
@@ -60,18 +61,17 @@ namespace AutobattlerSample.UI
                 var labelText = button.GetComponentInChildren<Text>();
                 if (labelText != null) labelText.fontSize = 24;
 
-                // Color based on stat type
                 var img = button.GetComponent<Image>();
-                switch (item.Stat)
+                switch (item.Type)
                 {
-                    case StatType.HP:
+                    case ItemType.MaxHP:
                         img.color = new Color(0.15f, 0.3f, 0.15f);
                         break;
-                    case StatType.Armor:
+                    case ItemType.Shield:
                         img.color = new Color(0.15f, 0.2f, 0.35f);
                         break;
-                    case StatType.AttackDamage:
-                        img.color = new Color(0.35f, 0.15f, 0.15f);
+                    case ItemType.CooldownReduction:
+                        img.color = new Color(0.3f, 0.2f, 0.35f);
                         break;
                 }
 
@@ -83,7 +83,6 @@ namespace AutobattlerSample.UI
                 });
             }
 
-            // Skip button
             var skip = UIFactory.CreateButton("Skip", _content, "Skip Reward");
             SetRect(skip.GetComponent<RectTransform>(), new Vector2(0.38f, 0.2f), new Vector2(0.62f, 0.3f));
             skip.onClick.AddListener(() => _onComplete?.Invoke(null, null));
@@ -93,8 +92,9 @@ namespace AutobattlerSample.UI
         {
             Clear();
 
+            string sign = _selectedItem.Type == ItemType.CooldownReduction ? "-" : "+";
             var title = UIFactory.CreateText("Title", _content,
-                $"Give \"{_selectedItem.Name}\" (+{_selectedItem.Amount} {_selectedItem.StatName}) to which unit?", 30);
+                $"Give \"{_selectedItem.Name}\" ({sign}{_selectedItem.Amount} {_selectedItem.TypeName}) to which unit?", 30);
             title.color = new Color(1f, 0.85f, 0.3f);
             SetRect(title.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 0.95f));
 
@@ -109,8 +109,10 @@ namespace AutobattlerSample.UI
                 float xMin = 0.1f + idx * (0.8f / livingCount);
                 float xMax = xMin + (0.75f / livingCount);
 
-                string info = $"{unit.DisplayName}\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}\n" +
-                              $"ARM:{unit.EffectiveArmor}  ATK:{unit.EffectiveAttack}";
+                string rankStr = unit.Rank > 1 ? $" R{unit.Rank}" : "";
+                string shieldStr = unit.Shield > 0 ? $"\nShield:{unit.Shield}" : "";
+                string info = $"{unit.DisplayName}{rankStr}\nHP:{unit.CurrentHP}/{unit.EffectiveMaxHP}\n" +
+                              $"ATK:{unit.EffectiveAttackDamage}  CD:{unit.EffectiveCooldown}{shieldStr}";
                 var button = UIFactory.CreateButton($"Unit_{idx}", _content, info);
                 SetRect(button.GetComponent<RectTransform>(), new Vector2(xMin, 0.35f), new Vector2(xMax, 0.7f));
 

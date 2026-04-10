@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AutobattlerSample.Core;
+using AutobattlerSample.Data;
 using AutobattlerSample.Map;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,11 +13,13 @@ namespace AutobattlerSample.UI
         private GameObject _root;
         private RectTransform _content;
         private Action<MapNode> _onNodeSelected;
+        private Action _onManageTeam;
 
-        public static MapScreen Create(Transform parent, Action<MapNode> onNodeSelected)
+        public static MapScreen Create(Transform parent, Action<MapNode> onNodeSelected, Action onManageTeam = null)
         {
             var screen = new MapScreen();
             screen._onNodeSelected = onNodeSelected;
+            screen._onManageTeam = onManageTeam;
 
             var canvas = UIFactory.CreateRootCanvas(parent);
             screen._root = UIFactory.CreatePanel("MapScreen", canvas.transform, Vector2.zero, Vector2.one);
@@ -32,7 +35,6 @@ namespace AutobattlerSample.UI
 
             int totalFloors = state.Map.Floors.Count;
 
-            // Calculate node positions first for line drawing
             var nodePositions = new Dictionary<MapNode, Vector2>();
             float yStart = -350f;
             float yEnd = 320f;
@@ -52,7 +54,7 @@ namespace AutobattlerSample.UI
                 }
             }
 
-            // Draw connection lines first (behind buttons)
+            // Draw connection lines
             for (int floor = 0; floor < totalFloors; floor++)
             {
                 foreach (var node in state.Map.Floors[floor])
@@ -77,7 +79,7 @@ namespace AutobattlerSample.UI
                     Vector2 pos = nodePositions[node];
 
                     string label = node.Label;
-                    if (node.Encounter != null && node.Type != MapNodeType.Rest && node.Type != MapNodeType.Boss)
+                    if (node.Encounter != null && node.Type != MapNodeType.Rest && node.Type != MapNodeType.Boss && node.Type != MapNodeType.Shop)
                     {
                         int enemyCount = node.Encounter.Enemies.Count;
                         label += $"\n({enemyCount} foes)";
@@ -90,7 +92,6 @@ namespace AutobattlerSample.UI
                     rt.sizeDelta = new Vector2(200f, 70f);
                     rt.anchoredPosition = pos;
 
-                    // Shrink label font
                     var labelText = button.GetComponentInChildren<Text>();
                     if (labelText != null) labelText.fontSize = 18;
 
@@ -125,15 +126,36 @@ namespace AutobattlerSample.UI
             foreach (var u in state.Team)
             {
                 if (!u.IsAlive) continue;
-                teamInfo += $"  {u.DisplayName} (HP:{u.CurrentHP}/{u.EffectiveMaxHP} ARM:{u.EffectiveArmor} ATK:{u.EffectiveAttack})";
+                string rankStr = u.Rank > 1 ? $"R{u.Rank} " : "";
+                string shieldStr = u.Shield > 0 ? $" Sh:{u.Shield}" : "";
+                teamInfo += $"  {u.DisplayName} ({rankStr}HP:{u.CurrentHP}/{u.EffectiveMaxHP} ATK:{u.EffectiveAttackDamage} CD:{u.EffectiveCooldown}{shieldStr})";
             }
-            var teamText = UIFactory.CreateText("Team", _content, teamInfo, 18);
+            var teamText = UIFactory.CreateText("Team", _content, teamInfo, 16);
             teamText.color = new Color(0.7f, 0.8f, 1f);
             var teamRt = teamText.rectTransform;
             teamRt.anchorMin = new Vector2(0f, 0f);
             teamRt.anchorMax = new Vector2(1f, 0f);
             teamRt.offsetMin = new Vector2(20f, 10f);
             teamRt.offsetMax = new Vector2(-20f, 50f);
+
+            // Manage Team button
+            if (_onManageTeam != null)
+            {
+                var manageBtn = UIFactory.CreateButton("ManageTeam", _content, "Manage Team");
+                var manageBtnRt = manageBtn.GetComponent<RectTransform>();
+                manageBtnRt.anchorMin = new Vector2(1f, 0f);
+                manageBtnRt.anchorMax = new Vector2(1f, 0f);
+                manageBtnRt.pivot = new Vector2(1f, 0f);
+                manageBtnRt.sizeDelta = new Vector2(180f, 45f);
+                manageBtnRt.anchoredPosition = new Vector2(-20f, 55f);
+                var manageBtnLabel = manageBtn.GetComponentInChildren<Text>();
+                if (manageBtnLabel != null) manageBtnLabel.fontSize = 18;
+                var btnColors = manageBtn.colors;
+                btnColors.normalColor = new Color(0.2f, 0.3f, 0.45f);
+                btnColors.highlightedColor = new Color(0.25f, 0.4f, 0.55f);
+                manageBtn.colors = btnColors;
+                manageBtn.onClick.AddListener(() => _onManageTeam?.Invoke());
+            }
 
             // Floor labels on the side
             for (int floor = 0; floor < totalFloors; floor++)
@@ -172,12 +194,14 @@ namespace AutobattlerSample.UI
                 case MapNodeType.Boss:
                     baseColor = new Color(0.55f, 0.1f, 0.1f);
                     break;
+                case MapNodeType.Shop:
+                    baseColor = new Color(0.15f, 0.35f, 0.45f);
+                    break;
                 default:
                     baseColor = new Color(0.3f, 0.3f, 0.3f);
                     break;
             }
 
-            // Tint reinforced nodes redder
             if (node.Reinforced)
                 baseColor = Color.Lerp(baseColor, new Color(0.8f, 0.15f, 0.1f), 0.4f);
 

@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: goblin_warchief
   DisplayName: Goblin Warchief
-  MaxHP: 45
-  Armor: 3
-  AttackDamage: 8
+  Type: 3
+  Size: 2
+  MaxHP: 80
+  Attributes: []
+  BaseAttackDamage: 8
+  AttackCooldown: 3
+  Passive: 0
+  RankUpBonusHP: 20
+  DamageScalePerRank: 1

@@ -21,6 +21,7 @@ namespace AutobattlerSample.Map
             {
                 if (Type == MapNodeType.Boss) return "BOSS";
                 if (Type == MapNodeType.Rest) return "Rest";
+                if (Type == MapNodeType.Shop) return "Shop";
                 string prefix = Reinforced ? "!! " : "";
                 if (Type == MapNodeType.Elite)
                     return prefix + "Elite" + (Encounter != null ? ": " + Encounter.DisplayName : "");

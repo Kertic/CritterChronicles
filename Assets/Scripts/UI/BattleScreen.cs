@@ -95,7 +95,7 @@ namespace AutobattlerSample.UI
             enemyLabel.color = new Color(1f, 0.4f, 0.4f);
             SetAnchoredRect(enemyLabel.rectTransform, new Vector2(0.6f, 0.85f), new Vector2(0.95f, 0.92f));
 
-            // Create ally BattleUnits and visuals (left side, squares)
+            // Create ally BattleUnits and visuals
             var allyBattleUnits = new List<BattleUnit>();
             var livingAllies = allyInstances.Where(u => u.IsAlive).ToList();
             for (int i = 0; i < livingAllies.Count; i++)
@@ -106,7 +106,7 @@ namespace AutobattlerSample.UI
                 CreateUnitVisual(bu, pos, true, i);
             }
 
-            // Create enemy BattleUnits and visuals (right side, circles)
+            // Create enemy BattleUnits and visuals
             var enemyBattleUnits = new List<BattleUnit>();
             for (int i = 0; i < encounter.Enemies.Count; i++)
             {
@@ -124,11 +124,30 @@ namespace AutobattlerSample.UI
 
         public void OnTurnAction(TurnAction action)
         {
+            // Handle cooldown skip
+            if (action.WasOnCooldown)
+            {
+                if (_turnText != null)
+                    _turnText.text = $"{action.Attacker.DisplayName} is on cooldown ({action.AttackerCooldownAfter} turns)";
+
+                // Update attacker visual to show cooldown
+                if (_unitVisuals.TryGetValue(action.Attacker, out var skipVisual))
+                    skipVisual.UpdateStats();
+
+                _combatLog?.AddEntry(action);
+                return;
+            }
+
             // Update turn text
             if (_turnText != null)
             {
                 string arrow = action.Attacker.IsAlly ? " >> " : " << ";
-                _turnText.text = $"{action.Attacker.DisplayName}{arrow}{action.Target.DisplayName}  (-{action.DamageDealt})";
+                string extra = "";
+                if (action.ShieldAbsorbed > 0)
+                    extra += $" [{action.ShieldAbsorbed} shielded]";
+                if (action.LifestealHealed > 0)
+                    extra += $" [+{action.LifestealHealed} heal]";
+                _turnText.text = $"{action.Attacker.DisplayName}{arrow}{action.Target.DisplayName}  (-{action.DamageDealt}){extra}";
             }
 
             // Play attacker wiggle
@@ -136,6 +155,7 @@ namespace AutobattlerSample.UI
             {
                 Vector2 dir = action.Attacker.IsAlly ? Vector2.right : Vector2.left;
                 attackerVisual.StartCoroutine(attackerVisual.PlayAttackWiggle(dir));
+                attackerVisual.UpdateStats(); // Update cooldown display
             }
 
             // Play target hit wiggle
@@ -152,6 +172,12 @@ namespace AutobattlerSample.UI
                 DamageNumber.Spawn(_content, targetPos + new Vector2(0, 55f), action.DamageDealt, dmgColor);
             }
 
+            // Spawn floating heal number for lifesteal
+            if (action.LifestealHealed > 0 && _unitPositions.TryGetValue(action.Attacker, out var attackerPos))
+            {
+                DamageNumber.SpawnHeal(_content, attackerPos + new Vector2(0, 55f), action.LifestealHealed);
+            }
+
             // Append to combat log
             _combatLog?.AddEntry(action);
         }
@@ -160,17 +186,14 @@ namespace AutobattlerSample.UI
         {
             _lastBattleWon = playerWon;
 
-            // Update turn text
             if (_turnText != null)
                 _turnText.text = playerWon ? "All enemies defeated!" : "Your team has fallen...";
 
-            // Footer
             _footer = UIFactory.CreateText("Footer", _content, playerWon ? "VICTORY!" : "DEFEAT...", 40);
             _footer.fontStyle = FontStyle.Bold;
             _footer.color = playerWon ? new Color(0.3f, 1f, 0.3f) : new Color(1f, 0.3f, 0.3f);
             SetAnchoredRect(_footer.rectTransform, new Vector2(0.3f, 0.08f), new Vector2(0.7f, 0.18f));
 
-            // Continue button
             var button = UIFactory.CreateButton("Continue", _content, "Continue");
             SetAnchoredRect(button.GetComponent<RectTransform>(), new Vector2(0.4f, 0.01f), new Vector2(0.6f, 0.07f));
             button.onClick.AddListener(() => _onContinue?.Invoke(_lastBattleWon));
@@ -185,7 +208,6 @@ namespace AutobattlerSample.UI
 
         private void CreateUnitVisual(BattleUnit unit, Vector2 position, bool isAlly, int index)
         {
-            // Container
             var container = new GameObject($"Unit_{unit.DisplayName}", typeof(RectTransform));
             container.transform.SetParent(_content, false);
             var containerRt = container.GetComponent<RectTransform>();
@@ -194,7 +216,6 @@ namespace AutobattlerSample.UI
             containerRt.anchoredPosition = position;
             containerRt.sizeDelta = Vector2.zero;
 
-            // Shape: square for allies, circle for enemies
             Color color = isAlly ? allyColors[index % allyColors.Length] : enemyColors[index % enemyColors.Length];
             Image shape;
             if (isAlly)
@@ -202,19 +223,16 @@ namespace AutobattlerSample.UI
             else
                 shape = UIFactory.CreateCircle(container.transform, color, 80f);
 
-            // Stat label above shape (pushed up to make room for HP bar)
             var statsText = UIFactory.CreateText("Stats", container.transform, "", 16, TextAnchor.LowerCenter);
             var statsRt = statsText.rectTransform;
             statsRt.anchorMin = new Vector2(0.5f, 0.5f);
             statsRt.anchorMax = new Vector2(0.5f, 0.5f);
-            statsRt.sizeDelta = new Vector2(200f, 70f);
-            statsRt.anchoredPosition = new Vector2(0f, 100f);
+            statsRt.sizeDelta = new Vector2(200f, 90f);
+            statsRt.anchoredPosition = new Vector2(0f, 105f);
 
-            // HP bar — sits between the shape and the stat text
             var (hpBg, hpFill) = UIFactory.CreateHPBar(container.transform, 100f, 10f);
             hpBg.rectTransform.anchoredPosition = new Vector2(0f, 50f);
 
-            // Add UnitVisual component
             var visual = container.AddComponent<UnitVisual>();
             visual.Init(unit, shape, statsText, hpFill);
 

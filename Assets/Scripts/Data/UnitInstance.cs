@@ -7,14 +7,36 @@ namespace AutobattlerSample.Data
     {
         public UnitData BaseData;
         public int BonusHP;
-        public int BonusArmor;
-        public int BonusAttack;
+        public int BonusCooldownReduction;
+        public int Shield;
+        public int Rank = 1;
         public int CurrentHP;
 
         public string DisplayName => BaseData != null ? BaseData.DisplayName : "Unit";
-        public int EffectiveMaxHP => (BaseData != null ? BaseData.MaxHP : 0) + BonusHP;
-        public int EffectiveArmor => (BaseData != null ? BaseData.Armor : 0) + BonusArmor;
-        public int EffectiveAttack => (BaseData != null ? BaseData.AttackDamage : 0) + BonusAttack;
+        public int EffectiveMaxHP => (BaseData != null ? BaseData.MaxHP + BaseData.RankUpBonusHP * (Rank - 1) : 0) + BonusHP;
+
+        public int EffectiveAttackDamage
+        {
+            get
+            {
+                if (BaseData == null) return 0;
+                float scale = BaseData.DamageScalePerRank;
+                if (scale <= 0f) scale = 1f;
+                return (int)(BaseData.BaseAttackDamage * Math.Pow(scale, Rank - 1));
+            }
+        }
+
+        public int EffectiveCooldown
+        {
+            get
+            {
+                if (BaseData == null) return 1;
+                int cd = BaseData.AttackCooldown - BonusCooldownReduction;
+                return cd < 1 ? 1 : cd;
+            }
+        }
+
+        public PassiveType Passive => BaseData != null ? BaseData.Passive : PassiveType.None;
         public bool IsAlive => CurrentHP > 0;
 
         public UnitInstance() { }
@@ -23,13 +45,20 @@ namespace AutobattlerSample.Data
         {
             BaseData = data;
             BonusHP = 0;
-            BonusArmor = 0;
-            BonusAttack = 0;
+            BonusCooldownReduction = 0;
+            Shield = 0;
+            Rank = 1;
             CurrentHP = EffectiveMaxHP;
         }
 
         public void FullHeal()
         {
+            CurrentHP = EffectiveMaxHP;
+        }
+
+        public void RankUp()
+        {
+            Rank++;
             CurrentHP = EffectiveMaxHP;
         }
 
@@ -39,11 +68,11 @@ namespace AutobattlerSample.Data
             {
                 BaseData = BaseData,
                 BonusHP = BonusHP,
-                BonusArmor = BonusArmor,
-                BonusAttack = BonusAttack,
+                BonusCooldownReduction = BonusCooldownReduction,
+                Shield = Shield,
+                Rank = Rank,
                 CurrentHP = CurrentHP
             };
         }
     }
 }
-

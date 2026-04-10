@@ -10,10 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a78ace26f6d45ed4b88d8211083afa6d, type: 3}
-  m_Name: Rabbit
+  m_Name: Owl
   m_EditorClassIdentifier: 
-  UnitId: rabbit
-  DisplayName: Rabbit
-  MaxHP: 24
-  Armor: 1
-  AttackDamage: 4
+  UnitId: owl
+  DisplayName: Owl
+  Type: 1
+  Size: 0
+  MaxHP: 12
+  Attributes:
+  - flying
+  BaseAttackDamage: 8
+  AttackCooldown: 4
+  Passive: 0
+  RankUpBonusHP: 8
+  DamageScalePerRank: 1.5

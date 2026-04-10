@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87259254a36f42fab95d4cb745cb89b7, type: 3}
-  m_Name: Whetstone
+  m_Name: MagicBarrier
   m_EditorClassIdentifier: 
-  Name: Whetstone
-  Stat: 2
-  Amount: 3
+  Name: Magic Barrier
+  Type: 2
+  Amount: 20

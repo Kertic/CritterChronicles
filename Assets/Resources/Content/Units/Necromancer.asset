@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: necromancer
   DisplayName: Necromancer
-  MaxHP: 40
-  Armor: 2
-  AttackDamage: 10
+  Type: 3
+  Size: 1
+  MaxHP: 60
+  Attributes: []
+  BaseAttackDamage: 10
+  AttackCooldown: 4
+  Passive: 1
+  RankUpBonusHP: 15
+  DamageScalePerRank: 1

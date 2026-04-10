@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: skeleton
   DisplayName: Skeleton
-  MaxHP: 14
-  Armor: 1
-  AttackDamage: 4
+  Type: 3
+  Size: 1
+  MaxHP: 20
+  Attributes: []
+  BaseAttackDamage: 4
+  AttackCooldown: 3
+  Passive: 0
+  RankUpBonusHP: 5
+  DamageScalePerRank: 1

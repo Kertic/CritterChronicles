@@ -5,6 +5,7 @@ namespace AutobattlerSample.Map
         Battle,
         Elite,
         Rest,
-        Boss
+        Boss,
+        Shop
     }
 }

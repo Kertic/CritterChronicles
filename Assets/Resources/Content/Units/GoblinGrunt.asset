@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: goblin_grunt
   DisplayName: Goblin Grunt
-  MaxHP: 10
-  Armor: 0
-  AttackDamage: 3
+  Type: 3
+  Size: 0
+  MaxHP: 15
+  Attributes: []
+  BaseAttackDamage: 3
+  AttackCooldown: 2
+  Passive: 0
+  RankUpBonusHP: 5
+  DamageScalePerRank: 1

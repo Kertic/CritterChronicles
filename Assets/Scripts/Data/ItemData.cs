@@ -1,47 +1,40 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace AutobattlerSample.Data
 {
-    public enum StatType
-    {
-        HP,
-        Armor,
-        AttackDamage
-    }
-
     [CreateAssetMenu(menuName = "Autobattler/Item Data")]
     public class ItemData : ScriptableObject
     {
         public string Name;
-        public StatType Stat;
+        public ItemType Type;
         public int Amount;
 
         public void ApplyTo(UnitInstance unit)
         {
-            switch (Stat)
+            switch (Type)
             {
-                case StatType.HP:
+                case ItemType.MaxHP:
                     unit.BonusHP += Amount;
                     unit.CurrentHP += Amount;
                     break;
-                case StatType.Armor:
-                    unit.BonusArmor += Amount;
+                case ItemType.CooldownReduction:
+                    unit.BonusCooldownReduction += Amount;
                     break;
-                case StatType.AttackDamage:
-                    unit.BonusAttack += Amount;
+                case ItemType.Shield:
+                    unit.Shield += Amount;
                     break;
             }
         }
 
-        public string StatName
+        public string TypeName
         {
             get
             {
-                switch (Stat)
+                switch (Type)
                 {
-                    case StatType.HP: return "HP";
-                    case StatType.Armor: return "Armor";
-                    case StatType.AttackDamage: return "Attack";
+                    case ItemType.MaxHP: return "Max HP";
+                    case ItemType.CooldownReduction: return "CD Reduction";
+                    case ItemType.Shield: return "Shield";
                     default: return "???";
                 }
             }
@@ -49,7 +42,8 @@ namespace AutobattlerSample.Data
 
         public override string ToString()
         {
-            return $"{Name}\n+{Amount} {StatName}";
+            string sign = Type == ItemType.CooldownReduction ? "-" : "+";
+            return $"{Name}\n{sign}{Amount} {TypeName}";
         }
     }
 }

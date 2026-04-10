@@ -42,11 +42,15 @@ namespace AutobattlerSample.Map
                     else
                     {
                         float roll = Random.value;
-                        if (roll < 0.15f)
+                        if (roll < 0.12f)
                         {
                             nodeType = MapNodeType.Rest;
                         }
-                        else if (roll < 0.30f)
+                        else if (roll < 0.27f)
+                        {
+                            nodeType = MapNodeType.Shop;
+                        }
+                        else if (roll < 0.42f)
                         {
                             nodeType = MapNodeType.Elite;
                             encounter = _contentGenerator.GenerateEliteEncounter(floor, i);

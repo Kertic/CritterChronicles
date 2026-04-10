@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitId: ogre
   DisplayName: Ogre
-  MaxHP: 60
-  Armor: 4
-  AttackDamage: 7
+  Type: 3
+  Size: 2
+  MaxHP: 120
+  Attributes: []
+  BaseAttackDamage: 12
+  AttackCooldown: 5
+  Passive: 0
+  RankUpBonusHP: 30
+  DamageScalePerRank: 1

@@ -1,11 +1,12 @@
 ﻿using AutobattlerSample.Battle;
+using AutobattlerSample.Data;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace AutobattlerSample.UI
 {
     /// <summary>
-    /// Scrollable combat log panel that displays detailed damage calculations
+    /// Scrollable combat log panel that displays detailed combat info
     /// with a copy-to-clipboard button.
     /// </summary>
     public class CombatLog
@@ -169,9 +170,29 @@ namespace AutobattlerSample.UI
             _turnNumber++;
 
             string attackerName = action.Attacker.DisplayName;
+
+            // Handle cooldown skip
+            if (action.WasOnCooldown)
+            {
+                string skipTag = action.Attacker.IsAlly
+                    ? $"<color=#4499FF>{attackerName}</color>"
+                    : $"<color=#FF4444>{attackerName}</color>";
+
+                string rankTag = action.AttackerRank > 1 ? $" <color=#FFD700>[R{action.AttackerRank}]</color>" : "";
+                _richSb.AppendLine($"<color=#FFDD66>#{_turnNumber}</color>  {skipTag}{rankTag} is on cooldown (<color=#FF8888>{action.AttackerCooldownAfter} turns</color>)");
+                _richSb.AppendLine();
+
+                _plainSb.AppendLine($"#{_turnNumber}  {attackerName} is on cooldown ({action.AttackerCooldownAfter} turns)");
+                _plainSb.AppendLine();
+
+                _logText.text = _richSb.ToString();
+                Canvas.ForceUpdateCanvases();
+                _scrollRect.verticalNormalizedPosition = 0f;
+                return;
+            }
+
             string targetName = action.Target.DisplayName;
 
-            // Rich-text version (displayed in UI)
             string attackerTag = action.Attacker.IsAlly
                 ? $"<color=#4499FF>{attackerName}</color>"
                 : $"<color=#FF4444>{attackerName}</color>";
@@ -179,26 +200,43 @@ namespace AutobattlerSample.UI
                 ? $"<color=#4499FF>{targetName}</color>"
                 : $"<color=#FF4444>{targetName}</color>";
 
-            _richSb.AppendLine($"<color=#FFDD66>#{_turnNumber}</color>  {attackerTag} attacks {targetTag}");
-            _richSb.AppendLine($"    Raw ATK <color=#FFFFFF>{action.RawDamage}</color>  \u2212  Armor <color=#AAAAFF>{action.TargetArmor}</color>  =  <color=#FFAA33>{action.DamageDealt}</color> dmg");
+            string rankInfo = action.AttackerRank > 1 ? $" <color=#FFD700>[R{action.AttackerRank}]</color>" : "";
+
+            _richSb.AppendLine($"<color=#FFDD66>#{_turnNumber}</color>  {attackerTag}{rankInfo} attacks {targetTag}");
+            _richSb.Append($"    <color=#FFAA33>{action.DamageDealt}</color> dmg");
+            if (action.ShieldAbsorbed > 0)
+                _richSb.Append($"  (<color=#6699FF>{action.ShieldAbsorbed} absorbed by shield</color>)");
+            _richSb.AppendLine();
             _richSb.Append($"    HP  <color=#88FF88>{action.TargetHPBefore}</color> \u2192 <color=#88FF88>{action.TargetHPAfter}</color>");
+            if (action.TargetShieldBefore > 0 || action.TargetShieldAfter > 0)
+                _richSb.Append($"  Shield  <color=#6699FF>{action.TargetShieldBefore}</color> \u2192 <color=#6699FF>{action.TargetShieldAfter}</color>");
             if (action.KilledTarget)
                 _richSb.Append("  <color=#FF5555>\u2726 KILLED</color>");
             _richSb.AppendLine();
+            if (action.LifestealHealed > 0)
+                _richSb.AppendLine($"    <color=#DD88FF>\u2665 Lifesteal: +{action.LifestealHealed} HP</color>");
+            _richSb.Append($"    Cooldown: <color=#FF8888>{action.AttackerCooldownAfter} turns</color>");
+            _richSb.AppendLine();
             _richSb.AppendLine();
 
-            // Plain-text version (for clipboard)
-            _plainSb.AppendLine($"#{_turnNumber}  {attackerName} attacks {targetName}");
-            _plainSb.AppendLine($"    Raw ATK {action.RawDamage}  -  Armor {action.TargetArmor}  =  {action.DamageDealt} dmg");
+            // Plain text
+            _plainSb.AppendLine($"#{_turnNumber}  {attackerName} (R{action.AttackerRank}) attacks {targetName}");
+            _plainSb.Append($"    {action.DamageDealt} dmg");
+            if (action.ShieldAbsorbed > 0)
+                _plainSb.Append($"  ({action.ShieldAbsorbed} absorbed by shield)");
+            _plainSb.AppendLine();
             _plainSb.Append($"    HP  {action.TargetHPBefore} -> {action.TargetHPAfter}");
+            if (action.TargetShieldBefore > 0 || action.TargetShieldAfter > 0)
+                _plainSb.Append($"  Shield  {action.TargetShieldBefore} -> {action.TargetShieldAfter}");
             if (action.KilledTarget)
                 _plainSb.Append("  ** KILLED **");
             _plainSb.AppendLine();
+            if (action.LifestealHealed > 0)
+                _plainSb.AppendLine($"    Lifesteal: +{action.LifestealHealed} HP");
+            _plainSb.AppendLine($"    Cooldown: {action.AttackerCooldownAfter} turns");
             _plainSb.AppendLine();
 
             _logText.text = _richSb.ToString();
-
-            // Auto-scroll to bottom
             Canvas.ForceUpdateCanvases();
             _scrollRect.verticalNormalizedPosition = 0f;
         }

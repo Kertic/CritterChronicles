@@ -9,6 +9,7 @@ namespace AutobattlerSample.Data
         public List<UnitData> PlayerUnits = new();
         public List<UnitData> EnemyUnits = new();
         public List<UnitData> BossUnits = new();
+        public List<UnitData> ShopUnits = new();
         public List<ItemData> RewardItems = new();
         public List<string> FloorEncounterNames = new() { "Scouts", "Raiders", "Warband", "Horde", "Legion" };
     }

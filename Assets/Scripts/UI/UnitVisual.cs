@@ -1,5 +1,6 @@
 using System.Collections;
 using AutobattlerSample.Battle;
+using AutobattlerSample.Data;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,7 +39,19 @@ namespace AutobattlerSample.UI
                 return;
             }
 
-            _statText.text = $"{Unit.DisplayName}\nHP:{Unit.CurrentHP}/{Unit.MaxHP}\nARM:{Unit.Armor}  ATK:{Unit.Attack}";
+            string rankStr = Unit.Rank > 1 ? $" <color=#FFD700>R{Unit.Rank}</color>" : "";
+            string shieldStr = Unit.Shield > 0 ? $"  <color=#6699FF>Shield:{Unit.Shield}</color>" : "";
+            string cdStr = Unit.CurrentCooldown > 0
+                ? $"  <color=#FF8888>CD:{Unit.CurrentCooldown}</color>"
+                : "  <color=#88FF88>Ready</color>";
+            string passiveStr = Unit.Passive != PassiveType.None
+                ? $"\n<color=#DD88FF>{Unit.Passive}</color>"
+                : "";
+
+            _statText.text = $"{Unit.DisplayName}{rankStr}\n" +
+                             $"HP:{Unit.CurrentHP}/{Unit.MaxHP}{shieldStr}\n" +
+                             $"ATK:{Unit.AttackDamage}{cdStr}{passiveStr}";
+
             if (_hpBarFill != null)
             {
                 float ratio = Unit.MaxHP > 0 ? (float)Unit.CurrentHP / Unit.MaxHP : 0f;
@@ -49,18 +62,10 @@ namespace AutobattlerSample.UI
 
         private void SetHPBarWidth(float ratio)
         {
-            if (_hpBarFill == null)
-            {
-                return;
-            }
-
+            if (_hpBarFill == null) return;
             var fillRt = _hpBarFill.rectTransform;
             var bgRt = fillRt.parent as RectTransform;
-            if (bgRt == null)
-            {
-                return;
-            }
-
+            if (bgRt == null) return;
             float innerWidth = Mathf.Max(0f, bgRt.rect.width - 2f);
             fillRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, innerWidth * Mathf.Clamp01(ratio));
         }
